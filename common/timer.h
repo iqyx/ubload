@@ -38,6 +38,12 @@ int32_t timer_wait_ms(uint32_t delay);
 #define TIMER_WAIT_MS_OK 0
 #define TIMER_WAIT_MS_FAILED -1
 
+int32_t timer_timeout_start(uint32_t *start);
+#define TIMER_TIMEOUT_INIT_OK 0
+#define TIMER_TIMEOUT_INIT_FAILED -1
+
+bool timer_timeout_check(uint32_t start, uint32_t timeout);
+
 
 #endif
 

@@ -56,13 +56,30 @@ int32_t timer_free(void) {
 int32_t timer_wait_ms(uint32_t delay) {
 
 	/* capture actual systick counter and add the wanted delay */
-	uint32_t start = systick_counter;
-	uint32_t stop = start + delay;
-
-	while ((start <= stop && systick_counter >= start && systick_counter < stop) ||
-	       (start > stop && (systick_counter >= start || systick_counter < stop))) {
+	uint32_t start;
+	timer_timeout_start(&start);
+	while (timer_timeout_check(start, delay)) {
 		;
 	}
 
 	return TIMER_WAIT_MS_OK;
+}
+
+
+int32_t timer_timeout_start(uint32_t *start) {
+	if (start == NULL) {
+		return TIMER_TIMEOUT_INIT_FAILED;
+	}
+
+	*start = systick_counter;
+
+	return TIMER_TIMEOUT_INIT_OK;
+}
+
+
+bool timer_timeout_check(uint32_t start, uint32_t timeout) {
+	uint32_t stop = start + timeout;
+
+	return ((start <= stop && systick_counter >= start && systick_counter < stop) ||
+	        (start > stop && (systick_counter >= start || systick_counter < stop)));
 }

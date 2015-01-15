@@ -2,10 +2,11 @@
 
 V=1
 
-CFLAGS          += -I . -I ../../common
+CFLAGS          += -I . -I ../../common -I ../../lineedit
 OBJS            += ../../common/config.o ../../common/led_basic.o
 OBJS            += ../../common/fw_runner.o ../../common/cli.o
 OBJS            += ../../common/timer.o
+OBJS            += ../../lineedit/lineedit.o
 
 OPENCM3_DIR      = ../../libopencm3
 

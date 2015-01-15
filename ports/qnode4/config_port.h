@@ -40,10 +40,11 @@
 /* Serial port settings */
 #define PORT_SERIAL                true
 #define PORT_SERIAL_USART          USART1
-#define PORT_SERIAL_TX_PORT        GPIOA
-#define PORT_SERIAL_TX_PIN         GPIO8
-#define PORT_SERIAL_RX_PORT        GPIOA
-#define PORT_SERIAL_RX_PIN         GPIO9
+#define PORT_SERIAL_TX_PORT        GPIOB
+#define PORT_SERIAL_TX_PIN         6
+#define PORT_SERIAL_RX_PORT        GPIOB
+#define PORT_SERIAL_RX_PIN         7
+#define PORT_SERIAL_AF             GPIO_AF7
 
 /* Firmware runner configuration */
 #define FW_RUNNER_BASE             0x08004000

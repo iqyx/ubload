@@ -29,7 +29,7 @@ const struct ubload_config default_config = {
 	.serial_speed = 115200,
 	.led_mode = LED_MODE_BASIC,
 	.cli_enabled = true,
-	.enter_key = 10,
+	.enter_key = 13,
 	.skip_key = 27,
 	.wait_time = 5,
 

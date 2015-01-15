@@ -38,6 +38,10 @@ int32_t fw_runner_jump(struct fw_runner *r);
 #define FW_RUNNER_JUMP_OK 0
 #define FW_RUNNER_JUMP_FAILED -1
 
+int32_t fw_runner_reset(struct fw_runner *r);
+#define FW_RUNNER_RESET_OK 0
+#define FW_RUNNER_RESET_FAILED -1
+
 
 #endif
 

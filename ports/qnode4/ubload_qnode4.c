@@ -89,6 +89,7 @@ int main(void) {
 	mcu_init();
 	timer_init();
 	gpio_init();
+	fw_runner_init(&runner, (void *)FW_RUNNER_BASE);
 
 	/* Initialize running configuration using defaults. */
 	memcpy(&running_config, &default_config, sizeof(running_config));
@@ -128,8 +129,7 @@ int main(void) {
 				;
 			} else {
 				/* Reset on error, quit or reset command. */
-				/* TODO: */
-				;
+				fw_runner_reset(&runner);
 			}
 		} else {
 			/* Continue booting on error, no keypress or skip keypress
@@ -139,9 +139,7 @@ int main(void) {
 	}
 
 	/* Boot here. */
-	fw_runner_init(&runner, (void *)FW_RUNNER_BASE);
 	fw_runner_jump(&runner);
-
 
 	while (1) {
 		#if PORT_LED_BASIC == true

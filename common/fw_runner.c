@@ -60,3 +60,19 @@ int32_t fw_runner_jump(struct fw_runner *r) {
 	/* never reached */
 	return FW_RUNNER_JUMP_OK;
 }
+
+
+int32_t fw_runner_reset(struct fw_runner *r) {
+	if (r == NULL) {
+		return FW_RUNNER_RESET_FAILED;
+	}
+
+	/* TODO: remove this magic. */
+        *((unsigned long*)0xE000ED0C) = 0x05FA0004;
+        while (1) {
+		;
+	}
+
+	/* Unreachable. */
+	return FW_RUNNER_RESET_OK;
+}

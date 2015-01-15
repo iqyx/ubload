@@ -27,12 +27,15 @@
 #include "config_port.h"
 #include "led_basic.h"
 #include "fw_runner.h"
+#include "timer.h"
 
 #if PORT_LED_BASIC == true
 struct led_basic led_stat;
 #endif
 
 struct fw_runner runner;
+
+
 
 
 static int32_t mcu_init(void) {
@@ -45,22 +48,21 @@ static int32_t mcu_init(void) {
 
 int main(void) {
 	mcu_init();
+	timer_init();
 
 	#if PORT_LED_BASIC == true
 		led_basic_init(&led_stat, PORT_LED_BASIC_PORT, PORT_LED_BASIC_PIN, PORT_LED_BASIC_INV);
 	#endif
 
-	fw_runner_init(&runner, FW_RUNNER_BASE);
-	fw_runner_jump(&runner);
+	fw_runner_init(&runner, (void *)FW_RUNNER_BASE);
+	//~ fw_runner_jump(&runner);
 
 	while (1) {
 		#if PORT_LED_BASIC == true
 			led_basic_timer(&led_stat);
 		#endif
 
-		for (int i = 0; i < 1000000; i++) {
-			__asm__("nop");
-		}
+		timer_wait_ms(100);
 	}
 
 	return 0;

@@ -4,7 +4,8 @@ V=1
 
 CFLAGS          += -I . -I ../../common
 OBJS            += ../../common/config.o ../../common/led_basic.o
-OBJS            += ../../common/fw_runner.o
+OBJS            += ../../common/fw_runner.o ../../common/cli.o
+OBJS            += ../../common/timer.o
 
 OPENCM3_DIR      = ../../libopencm3
 

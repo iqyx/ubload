@@ -79,6 +79,9 @@ struct ubload_config {
 	/* CLI inactivity time setup */
 	uint32_t idle_time;
 
+	/* System identification */
+	char host[32];
+
 };
 
 

@@ -33,6 +33,7 @@ const struct ubload_config default_config = {
 	.skip_key = 27,
 	.wait_time = 5,
 	.idle_time = 300,
+	.host = "unknown",
 
 };
 

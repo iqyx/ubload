@@ -50,7 +50,12 @@ static int32_t cli_prompt_callback(struct lineedit *le, void *ctx) {
 
 	lineedit_escape_print(le, ESC_COLOR, LINEEDIT_FG_COLOR_YELLOW);
 	lineedit_escape_print(le, ESC_BOLD, 0);
-	le->print_handler("uBLoad > ", le->print_handler_ctx);
+	le->print_handler("uBLoad(", le->print_handler_ctx);
+	lineedit_escape_print(le, ESC_DEFAULT, 0);
+	le->print_handler(running_config.host, le->print_handler_ctx);
+	lineedit_escape_print(le, ESC_COLOR, LINEEDIT_FG_COLOR_YELLOW);
+	lineedit_escape_print(le, ESC_BOLD, 0);
+	le->print_handler(") > ", le->print_handler_ctx);
 	lineedit_escape_print(le, ESC_DEFAULT, 0);
 
 	return 0;

@@ -22,6 +22,9 @@
 #ifndef _CONFIG_PORT_H_
 #define _CONFIG_PORT_H_
 
+#include "version.h"
+
+#define PORT_NAME                  "qNode4"
 
 /* Enable basic status/diagnostic LED functionality. */
 #define PORT_LED_BASIC             true

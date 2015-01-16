@@ -42,6 +42,10 @@ int32_t fw_runner_reset(struct fw_runner *r);
 #define FW_RUNNER_RESET_OK 0
 #define FW_RUNNER_RESET_FAILED -1
 
+int32_t fw_runner_watchdog_enable(struct fw_runner *r);
+#define FW_RUNNER_WATCHDOG_ENABLE_OK 0
+#define FW_RUNNER_WATCHDOG_ENABLE_FAILED -1
+
 
 #endif
 

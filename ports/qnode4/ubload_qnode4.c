@@ -152,6 +152,16 @@ int main(void) {
 	/* TODO: reboot here after firmware flashing */
 
 	/* Boot here. */
+	if (running_config.watchdog_enabled) {
+		if (running_config.cli_enabled) {
+			cli_print(&console_cli, "Enabling watchdog\r\n");
+		}
+		fw_runner_watchdog_enable(&runner);
+	}
+
+	if (running_config.cli_enabled) {
+		cli_print(&console_cli, "Jumping to user code\r\n");
+	}
 	fw_runner_jump(&runner);
 
 	while (1) {

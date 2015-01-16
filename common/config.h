@@ -82,6 +82,9 @@ struct ubload_config {
 	/* System identification */
 	char host[32];
 
+	/* Independend watchdog */
+	bool watchdog_enabled;
+
 };
 
 

@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <libopencm3/stm32/iwdg.h>
+
 #include "fw_runner.h"
 
 
@@ -77,6 +79,17 @@ int32_t fw_runner_reset(struct fw_runner *r) {
 	return FW_RUNNER_RESET_OK;
 }
 
+
+int32_t fw_runner_watchdog_enable(struct fw_runner *r) {
+	if (r == NULL) {
+		return FW_RUNNER_WATCHDOG_ENABLE_FAILED;
+	}
+
+	iwdg_set_period_ms(5000);
+	iwdg_start();
+
+	return FW_RUNNER_WATCHDOG_ENABLE_OK;
+}
 
 /* TODO: authenticate */
 /* TODO: check firmware header + if it is valid according to configuration */

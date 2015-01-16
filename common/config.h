@@ -72,9 +72,12 @@ struct ubload_config {
 
 	/* Bootloader enter setup */
 	bool cli_enabled;
-	uint8_t wait_time;
+	uint32_t wait_time;
 	char enter_key;
 	char skip_key;
+
+	/* CLI inactivity time setup */
+	uint32_t idle_time;
 
 };
 

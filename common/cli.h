@@ -47,6 +47,7 @@ int32_t cli_wait_keypress(struct cli *c);
 #define CLI_WAIT_KEYPRESS_FAILED -1
 
 int32_t cli_run(struct cli *c);
+#define CLI_RUN_TIMEOUT 2
 #define CLI_RUN_RESET 1
 #define CLI_RUN_BOOT 0
 #define CLI_RUN_FAILED -1

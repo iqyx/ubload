@@ -128,6 +128,10 @@ int main(void) {
 				/* Continue booting. */
 				;
 			} else {
+				if (cli_res == CLI_RUN_TIMEOUT) {
+					cli_print(&console_cli, "\r\nExiting CLI & doing reset due to inactivity...\r\n");
+				}
+
 				/* Reset on error, quit or reset command. */
 				fw_runner_reset(&runner);
 			}

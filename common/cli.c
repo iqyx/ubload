@@ -113,12 +113,24 @@ int32_t cli_run(struct cli *c) {
 
 	while (1) {
 
+		/* Capture systick to measure time without keypress. */
+		uint32_t last_keypress;
+		timer_timeout_start(&last_keypress);
+
 		/* Do for every single line. */
 		lineedit_clear(&(c->le));
 		lineedit_refresh(&(c->le));
 		while (1) {
 			/* TODO: insert timeout here, exit with reset on timeout. */
-			uint16_t chr = usart_recv_blocking(c->console);
+			/* Wait for single character or break on timeout. */
+			while (!usart_get_flag(c->console, USART_SR_RXNE)) {
+				if (!timer_timeout_check(last_keypress, running_config.idle_time * 1000)) {
+					return CLI_RUN_TIMEOUT;
+				}
+			}
+			uint16_t chr = usart_recv(c->console);
+			timer_timeout_start(&last_keypress);
+
 			int32_t res = lineedit_keypress(&(c->le), chr);
 
 			if (res == LINEEDIT_ENTER) {

@@ -32,6 +32,7 @@ const struct ubload_config default_config = {
 	.enter_key = 13,
 	.skip_key = 27,
 	.wait_time = 5,
+	.idle_time = 300,
 
 };
 

@@ -27,10 +27,11 @@
 #include <libopencm3/stm32/usart.h>
 
 #include "config.h"
+#include "config_port.h"
 #include "cli.h"
 #include "timer.h"
 #include "lineedit.h"
-
+#include "fw_flash.h"
 
 static int32_t cli_print_handler(const char *s, void *ctx) {
 
@@ -175,6 +176,10 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 	cli_print(c, "execute = ");
 	cli_print(c, cmd);
 	cli_print(c, "\r\n");
+
+	if (!strcmp(cmd, "dump")) {
+		fw_flash_dump(FW_RUNNER_BASE, 0x1000);
+	}
 
 	return CLI_EXECUTE_OK;
 }

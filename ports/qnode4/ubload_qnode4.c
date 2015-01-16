@@ -138,6 +138,15 @@ int main(void) {
 		}
 	}
 
+	/* TODO: check firmware header here */
+	/* TODO: check firmware integrity here */
+	/* TODO: authenticate firmware here */
+
+	/* TODO: flash here if bad header is found or firmware integrity check
+	 * failed or authentication failed */
+
+	/* TODO: reboot here after firmware flashing */
+
 	/* Boot here. */
 	fw_runner_jump(&runner);
 

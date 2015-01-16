@@ -76,3 +76,9 @@ int32_t fw_runner_reset(struct fw_runner *r) {
 	/* Unreachable. */
 	return FW_RUNNER_RESET_OK;
 }
+
+
+/* TODO: authenticate */
+/* TODO: check firmware header + if it is valid according to configuration */
+/* TODO: check firmware integrity */
+

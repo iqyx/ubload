@@ -37,7 +37,13 @@ int32_t fw_flash_dump(uint32_t addr, uint32_t len);
 #define FW_FLASH_DUMP_OK 0
 #define FW_FLASH_DUMP_FAILED -1
 
+int32_t fw_flash_erase_sector(uint8_t sector);
+#define FW_FLASH_ERASE_SECTOR_OK 0
+#define FW_FLASH_ERASE_SECTOR_FAILED -1
 
+int32_t fw_flash_program(uint32_t offset, uint8_t *data, uint32_t len);
+#define FW_FLASH_PROGRAM_OK 0
+#define FW_FLASH_PROGRAM_FAILED -1
 
 #endif
 

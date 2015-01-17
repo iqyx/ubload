@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <libopencm3/stm32/usart.h>
 
@@ -32,6 +33,8 @@
 #include "timer.h"
 #include "lineedit.h"
 #include "fw_flash.h"
+#include "xmodem.h"
+
 
 static int32_t cli_print_handler(const char *s, void *ctx) {
 
@@ -185,6 +188,15 @@ int32_t cli_confirm(struct cli *c) {
 }
 
 
+static int32_t cli_xmodem_recv_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
+	(void)ctx;
+
+	fw_flash_program(offset, data, len);
+
+	return XMODEM_RECV_CB_OK;
+}
+
+
 int32_t cli_execute(struct cli *c, char *cmd) {
 	if (c == NULL || cmd == NULL) {
 		return CLI_EXECUTE_FAILED;
@@ -203,6 +215,37 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 		cli_print_help(c);
 		return CLI_EXECUTE_OK;
 	}
+
+	if (!strcmp(cmd, "erase")) {
+		for (uint32_t i = FLASH_FW_FIRST_SECTOR; i < FLASH_SECTORS; i++) {
+			char s[40];
+			snprintf(s, sizeof(s), "Erasing sector %u... ", (unsigned int)i);
+			cli_print(c, s);
+			fw_flash_erase_sector(i);
+			cli_print(c, "\r\n");
+		}
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(cmd, "program")) {
+		cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
+
+		struct xmodem x;
+		xmodem_init(&x, c->console);
+		xmodem_set_recv_callback(&x, cli_xmodem_recv_cb, (void *)c);
+		xmodem_recv(&x);
+
+		/* Clear the terminal after xmodem transfer. */
+		cli_print(c, "                   \r\n");
+		char s[40];
+		snprintf(s, sizeof(s), "%u bytes programmed.\r\n", (unsigned int)(x.bytes_transferred));
+		cli_print(c, s);
+
+		xmodem_free(&x);
+
+		return CLI_EXECUTE_OK;
+	}
+
 
 	cli_print(c, "Unknown command '");
 	cli_print(c, cmd);
@@ -288,6 +331,15 @@ int32_t cli_print_help(struct cli *c) {
 	cli_print_help_command(c,
 		"set <name> <value>",
 		"\tAssign value <value> to a configuration variable <name>."
+	);
+	cli_print_help_command(c,
+		"erase",
+		"\tErase loaded firmware image. Bootloader is preserved."
+	);
+	cli_print_help_command(c,
+		"dump <start> <length>",
+		"\tDump <length> bytes of the loaded firmware image starting\r\n"
+		"\tfrom offset <start>."
 	);
 	cli_print_help_command(c,
 		"program <name>",

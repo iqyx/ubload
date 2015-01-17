@@ -24,7 +24,10 @@
 #include <stdio.h>
 
 #include <libopencm3/stm32/usart.h>
+#include <libopencm3/stm32/flash.h>
 
+#include "config.h"
+#include "config_port.h"
 #include "fw_flash.h"
 #include "cli.h"
 
@@ -84,4 +87,25 @@ int32_t fw_flash_dump(uint32_t addr, uint32_t len) {
 
 	return FW_FLASH_DUMP_OK;
 }
+
+
+int32_t fw_flash_erase_sector(uint8_t sector) {
+
+	flash_unlock();
+	flash_erase_sector(sector, FLASH_PROGRAM_SIZE);
+	flash_lock();
+
+	return FW_FLASH_ERASE_SECTOR_OK;
+}
+
+
+int32_t fw_flash_program(uint32_t offset, uint8_t *data, uint32_t len) {
+
+	flash_unlock();
+	flash_program(FW_RUNNER_BASE + offset, data, len);
+
+	return FW_FLASH_PROGRAM_OK;
+}
+
+
 

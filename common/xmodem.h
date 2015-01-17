@@ -62,12 +62,17 @@ struct xmodem {
 	/**
 	 * Callback function called when a packet is received.
 	 */
-	int32_t (*recv_cb)(uint8_t *data, uint32_t len, void *ctx);
+	int32_t (*recv_cb)(uint8_t *data, uint32_t len, uint32_t offset, void *ctx);
 	/**
 	 * Context of the callback function. It will be passed as the last
 	 * argument when calling the callback function.
 	 */
 	void *recv_cb_ctx;
+
+	/**
+	 * Total bytes transferred so far.
+	 */
+	uint32_t bytes_transferred;
 };
 
 
@@ -141,7 +146,7 @@ int32_t xmodem_recv_packet(struct xmodem *x, uint8_t *data);
  * @return XMODEM_SET_RECV_CALLBACK_OK on success or
  *         XMODEM_SET_RECV_CALLBACK_FAILED otherwise.
  */
-int32_t xmodem_set_recv_callback(struct xmodem *x, int32_t (*recv_cb)(uint8_t *data, uint32_t len, void *ctx), void *recv_cb_ctx);
+int32_t xmodem_set_recv_callback(struct xmodem *x, int32_t (*recv_cb)(uint8_t *data, uint32_t len, uint32_t offset, void *ctx), void *recv_cb_ctx);
 #define XMODEM_SET_RECV_CALLBACK_OK 0
 #define XMODEM_SET_RECV_CALLBACK_FAILED -1
 #define XMODEM_RECV_CB_OK 0

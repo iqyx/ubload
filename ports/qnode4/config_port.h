@@ -53,6 +53,11 @@
 /* Firmware runner configuration */
 #define FW_RUNNER_BASE             0x08004000
 
+/* Flash configuration */
+#define FLASH_SECTORS              6
+#define FLASH_FW_FIRST_SECTOR      1
+#define FLASH_PROGRAM_SIZE         3
+
 #endif
 
 

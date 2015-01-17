@@ -139,7 +139,7 @@ int32_t xmodem_recv_packet(struct xmodem *x, uint8_t *data) {
 }
 
 
-int32_t xmodem_set_recv_callback(struct xmodem *x, int32_t (*recv_cb)(uint8_t *data, uint32_t len, void *ctx), void *recv_cb_ctx) {
+int32_t xmodem_set_recv_callback(struct xmodem *x, int32_t (*recv_cb)(uint8_t *data, uint32_t len, uint32_t offset, void *ctx), void *recv_cb_ctx) {
 	if (x == NULL || recv_cb == NULL) {
 		return XMODEM_SET_RECV_CALLBACK_FAILED;
 	}
@@ -157,6 +157,8 @@ int32_t xmodem_recv(struct xmodem *x) {
 	}
 
 	uint32_t retry = 0;
+	uint32_t offset = 0;
+	x->bytes_transferred = 0;
 	x->pkt_expected = 1;
 
 	while (1) {
@@ -179,7 +181,7 @@ int32_t xmodem_recv(struct xmodem *x) {
 		if (res == XMODEM_RECV_PACKET_OK) {
 			/* TODO: save packet data */
 			if (x->recv_cb != NULL) {
-				if (x->recv_cb(data, 128, x->recv_cb_ctx) != XMODEM_RECV_CB_OK) {
+				if (x->recv_cb(data, 128, offset, x->recv_cb_ctx) != XMODEM_RECV_CB_OK) {
 					/* Break the transfer if something went
 					 * wrong or breaking the transfer was
 					 * requested from inside of recv_cb. */
@@ -193,6 +195,8 @@ int32_t xmodem_recv(struct xmodem *x) {
 			usart_send_blocking(x->console, XMODEM_ACK);
 			retry = 0;
 			x->pkt_expected++;
+			x->bytes_transferred += 128;
+			offset += 128;
 		}
 
 		if (res == XMODEM_RECV_PACKET_EOT) {

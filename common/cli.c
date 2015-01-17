@@ -230,3 +230,26 @@ int32_t cli_print_help(struct cli *c) {
 
 	return CLI_PRINT_HELP_OK;
 }
+
+
+int32_t cli_print_banner(struct cli *c) {
+	if (c == NULL) {
+		return CLI_PRINT_BANNER_FAILED;
+	}
+
+	lineedit_escape_print(&(c->le), ESC_BOLD, 0);
+	lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_YELLOW);
+	cli_print(c, "\r\n### ");
+	cli_print(c, PORT_BANNER);
+	cli_print(c, ", ");
+	cli_print(c, PORT_NAME);
+	cli_print(c, " platform\r\n### version ");
+	cli_print(c, UBLOAD_VERSION);
+	cli_print(c, ", build date ");
+	cli_print(c, UBLOAD_BUILD_DATE);
+	cli_print(c, "\r\n");
+	lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+
+
+	return CLI_PRINT_BANNER_OK;
+}

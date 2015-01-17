@@ -34,7 +34,7 @@ const struct ubload_config default_config = {
 	.wait_time = 5,
 	.idle_time = 300,
 	.host = "unknown",
-	.watchdog_enabled = true,
+	.watchdog_enabled = false,
 
 };
 

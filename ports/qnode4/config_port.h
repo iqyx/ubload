@@ -25,6 +25,7 @@
 #include "version.h"
 
 #define PORT_NAME                  "qNode4"
+#define PORT_BANNER                "uBLoad (umeshFw bootloader)"
 
 /* Enable basic status/diagnostic LED functionality. */
 #define PORT_LED_BASIC             true

@@ -117,6 +117,8 @@ int main(void) {
 	if (running_config.cli_enabled) {
 		cli_init(&console_cli, PORT_SERIAL_USART);
 
+		cli_print_banner(&console_cli);
+
 		int32_t wait_res = cli_wait_keypress(&console_cli);
 		cli_print(&console_cli, "\r\n\r\n");
 		if (wait_res == CLI_WAIT_KEYPRESS_ENTER) {

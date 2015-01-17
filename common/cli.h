@@ -69,6 +69,9 @@ int32_t cli_print_help(struct cli *c);
 #define CLI_PRINT_HELP_OK 0
 #define CLI_PRINT_HELP_FAILED -1
 
+int32_t cli_print_banner(struct cli *c);
+#define CLI_PRINT_BANNER_OK 0
+#define CLI_PRINT_BANNER_FAILED -1
 
 #endif
 

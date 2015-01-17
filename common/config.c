@@ -35,6 +35,8 @@ const struct ubload_config default_config = {
 	.idle_time = 300,
 	.host = "unknown",
 	.watchdog_enabled = false,
+	.xmodem_retry_count = 30,
+	.xmodem_timeout = 1000,
 
 };
 

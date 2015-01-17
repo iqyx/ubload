@@ -85,6 +85,10 @@ struct ubload_config {
 	/* Independend watchdog */
 	bool watchdog_enabled;
 
+	/* XMODEM configuration. */
+	uint32_t xmodem_retry_count;
+	uint32_t xmodem_timeout;
+
 };
 
 

@@ -190,15 +190,25 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 		return CLI_EXECUTE_FAILED;
 	}
 
-	cli_print(c, "execute = ");
-	cli_print(c, cmd);
-	cli_print(c, "\r\n");
+	if (!strcmp(cmd, "")) {
+		return CLI_EXECUTE_OK;
+	}
 
 	if (!strcmp(cmd, "dump")) {
 		fw_flash_dump(FW_RUNNER_BASE, 0x1000);
+		return CLI_EXECUTE_OK;
 	}
 
-	return CLI_EXECUTE_OK;
+	if (!strcmp(cmd, "help")) {
+		cli_print_help(c);
+		return CLI_EXECUTE_OK;
+	}
+
+	cli_print(c, "Unknown command '");
+	cli_print(c, cmd);
+	cli_print(c, "'\r\n");
+
+	return CLI_EXECUTE_FAILED;
 }
 
 
@@ -213,18 +223,103 @@ int32_t cli_print(struct cli *c, char *s) {
 }
 
 
+int32_t cli_print_help_command(struct cli *c, char *cmd, char *help) {
+	if (c == NULL) {
+		return CLI_PRINT_HELP_COMMAND_FAILED;
+	}
+
+	lineedit_escape_print(&(c->le), ESC_BOLD, 0);
+	cli_print(c, cmd);
+	lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+	cli_print(c, "\r\n");
+	cli_print(c, help);
+	cli_print(c, "\r\n");
+
+	return CLI_PRINT_HELP_COMMAND_OK;
+}
+
+
 int32_t cli_print_help(struct cli *c) {
 	if (c == NULL) {
 		return CLI_PRINT_HELP_FAILED;
 	}
 
-	lineedit_escape_print(&(c->le), ESC_BOLD, 0);
-	cli_print(c, "[HELP] uBLoad command line interface commands:\r\n");
-	lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
-	cli_print(c, "\treset     Quit the bootloader without saving changes and reset the device.\r\n");
-	cli_print(c, "\tquit      Alias for <reset>\r\n");
-	cli_print(c, "\tboot      Boot to user application with current settings\r\n");
-	cli_print(c, "\tsave      Save settings to nonvolatile memory\r\n");
+	cli_print(c,
+		"\r\nAvailable commands:\r\n"
+		"([] are optional parameters, <> are obligatory parameters)\r\n\r\n"
+	);
+
+	cli_print_help_command(c,
+		"help",
+		"\tPrint this help."
+	);
+	cli_print_help_command(c,
+		"reset",
+		"\tReset/reboot the device with confirmation."
+	);
+	cli_print_help_command(c,
+		"quit",
+		"\tAlias for <reset>."
+	);
+	cli_print_help_command(c,
+		"boot",
+		"\tBoot to a previously loaded firmware image.\r\n"
+		"\tNo firmware integrity check or authentication is performed."
+	);
+	cli_print_help_command(c,
+		"load [name]",
+		"\tLoad configuraton with name <name>. If no name is specified,\r\n"
+		"\tdefault saved startup configuration is loaded."
+	);
+	cli_print_help_command(c,
+		"save [name]",
+		"\tSave current running configuration as a file named <name>,\r\n"
+		"\tIf no name is given, configuration is saved as a startup configuration."
+	);
+	cli_print_help_command(c,
+		"defaults",
+		"\tLoad configuration defaults."
+	);
+	cli_print_help_command(c,
+		"show [name]",
+		"\tShow value of the selected configuration variable <name>.\r\n"
+		"\tDisplay values of all variables if no name is given."
+	);
+	cli_print_help_command(c,
+		"set <name> <value>",
+		"\tAssign value <value> to a configuration variable <name>."
+	);
+	cli_print_help_command(c,
+		"program <name>",
+		"\tProgram firmware image named <name>. Program firmware downloaded\r\n"
+		"\tdirectly over XMODEM if <xmodem> name is given."
+	);
+	cli_print_help_command(c,
+		"verify [name]",
+		"\tVerify firmware integrity. If no firmware <name> is given,\r\n"
+		"\tcurrently loaded firmware is verified."
+	);
+	cli_print_help_command(c,
+		"authenticate [name]",
+		"\tAuthenticate selected firmware. If no firmware <name> is given,\r\n"
+		"\tcurrently loaded firmware is authenticated."
+	);
+	cli_print_help_command(c,
+		"download <name> [protocol]",
+		"\tDownload firmware over serial port using protocol <protocol> and save\r\n"
+		"\tit as a firmware named <name>. If no protocol is specified, XMODEM is used."
+	);
+	cli_print_help_command(c,
+		"upload <name> [protocol]",
+		"\tUpload firmware named <name> over serial port using protocol <protocol>.\r\n"
+		"\tIf no protocol is specified, XMODEM is used."
+	);
+	cli_print_help_command(c,
+		"list <config|firmware>",
+		"\tList all available configuration or firmware files."
+	);
+
+
 	cli_print(c, "\r\n");
 
 

@@ -123,7 +123,7 @@ int main(void) {
 		cli_print(&console_cli, "\r\n\r\n");
 		if (wait_res == CLI_WAIT_KEYPRESS_ENTER) {
 
-			cli_print_help(&console_cli);
+			cli_print(&console_cli, "uBLoad command line interface, type <help> to show available commands.\r\n\r\n");
 
 			int32_t cli_res = cli_run(&console_cli);
 			if (cli_res == CLI_RUN_BOOT) {

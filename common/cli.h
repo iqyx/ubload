@@ -65,6 +65,10 @@ int32_t cli_print(struct cli *c, char *s);
 #define CLI_PRINT_OK 0
 #define CLI_PRINT_FAILED -1
 
+int32_t cli_print_help_command(struct cli *c, char *cmd, char *help);
+#define CLI_PRINT_HELP_COMMAND_OK 0
+#define CLI_PRINT_HELP_COMMAND_FAILED -1
+
 int32_t cli_print_help(struct cli *c);
 #define CLI_PRINT_HELP_OK 0
 #define CLI_PRINT_HELP_FAILED -1

@@ -34,6 +34,8 @@
 #include "fw_runner.h"
 #include "timer.h"
 #include "cli.h"
+#include "u_assert.h"
+#include "u_log.h"
 
 #if PORT_LED_BASIC == true
 struct led_basic led_stat;
@@ -47,12 +49,6 @@ struct fw_runner runner;
 struct cli console_cli;
 
 
-int u_assert_func(const char *a, const char *f, int n) {
-	(void)a;
-	(void)f;
-	(void)n;
-	return 1;
-}
 
 static int32_t mcu_init(void) {
 	rcc_periph_clock_enable(RCC_GPIOA);
@@ -86,6 +82,11 @@ static int32_t gpio_init(void) {
 
 
 int main(void) {
+	/* Initialize circular log before any other things. */
+	#if PORT_CLOG == true
+		u_log_init();
+	#endif
+
 	mcu_init();
 	timer_init();
 	gpio_init();
@@ -116,6 +117,7 @@ int main(void) {
 
 	if (running_config.cli_enabled) {
 		cli_init(&console_cli, PORT_SERIAL_USART);
+		u_log_set_cli_print_handler(&console_cli);
 
 		cli_print_banner(&console_cli);
 
@@ -124,6 +126,7 @@ int main(void) {
 		if (wait_res == CLI_WAIT_KEYPRESS_ENTER) {
 
 			cli_print(&console_cli, "uBLoad command line interface, type <help> to show available commands.\r\n\r\n");
+			log_cbuffer_printf(system_log, LOG_TYPE_INFO, "test");
 
 			int32_t cli_res = cli_run(&console_cli);
 			if (cli_res == CLI_RUN_BOOT) {

@@ -34,6 +34,7 @@
 #include "lineedit.h"
 #include "fw_flash.h"
 #include "xmodem.h"
+#include "u_log.h"
 
 
 static int32_t cli_print_handler(const char *s, void *ctx) {
@@ -246,6 +247,9 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 		return CLI_EXECUTE_OK;
 	}
 
+	if (!strcmp(cmd, "test")) {
+		u_log(system_log, LOG_TYPE_INFO, "test");
+	}
 
 	cli_print(c, "Unknown command '");
 	cli_print(c, cmd);

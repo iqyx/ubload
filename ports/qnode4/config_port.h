@@ -58,6 +58,11 @@
 #define FLASH_FW_FIRST_SECTOR      1
 #define FLASH_PROGRAM_SIZE         3
 
+/* Circular log configuration */
+#define PORT_CLOG                  true
+#define PORT_CLOG_BASE             0x20000000
+#define PORT_CLOG_SIZE             0x800
+
 #endif
 
 

@@ -8,6 +8,7 @@ OBJS            += ../../common/fw_runner.o ../../common/cli.o
 OBJS            += ../../common/timer.o ../../common/fw_flash.o
 OBJS            += ../../lineedit/lineedit.o ../../common/xmodem.o
 OBJS            += ../../common/system_log.o ../../common/u_log.o
+OBJS            += ../../common/spi_flash.o ../../common/sffs.o
 
 OPENCM3_DIR      = ../../libopencm3
 

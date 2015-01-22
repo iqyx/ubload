@@ -78,7 +78,7 @@ SCRIPT_DIR	= $(OPENCM3_DIR)/scripts
 ###############################################################################
 # C flags
 
-CFLAGS		+= -Os -g
+CFLAGS		+= -Os -g -flto
 CFLAGS		+= -Wextra -Wshadow -Wimplicit-function-declaration
 CFLAGS		+= -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
@@ -102,6 +102,7 @@ CPPFLAGS	+= -I$(INCLUDE_DIR) $(DEFS)
 # Linker flags
 
 LDFLAGS		+= --static -nostartfiles --specs=nano.specs
+LDFLAGS		+= -Os -flto
 LDFLAGS		+= -L$(LIB_DIR)
 LDFLAGS		+= -T$(LDSCRIPT)
 LDFLAGS		+= -Wl,-Map=$(*).map

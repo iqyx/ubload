@@ -24,6 +24,8 @@
 
 #include "cli.h"
 
+#define assert u_assert
+
 /* standard system assertion support */
 #ifndef u_assert
 #define u_assert(e) ((e) ? (0) : u_assert_func(#e, __FILE__, __LINE__))

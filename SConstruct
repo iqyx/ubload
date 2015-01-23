@@ -16,6 +16,15 @@ class term_format:
 def cformat(s):
 	return s.format(c = term_format)
 
+def make_ver(target, source, env):
+	for t in target:
+		with open(str(t), "w") as f:
+			f.write("#define UBLOAD_VERSION \"%s, %s, %s\"\n" % (env["GIT_BRANCH"], env["GIT_REV"], env["GIT_DATE"]))
+			f.write("#define UBLOAD_BUILD_DATE \"%s\"\n" % env["BUILD_DATE"])
+
+	return None
+
+
 # Create default environment and export it. It will be modified later
 # by platform-specific build scripts.
 env = Environment()
@@ -35,7 +44,8 @@ env["GIT_REV"] = os.popen("git rev-parse --short HEAD").read().rstrip()
 env["GIT_DATE"] = os.popen("git log -1 --format=%ci").read().rstrip()
 
 # create build version information
-env["BUILD_DATE"] = time.ctime(time.time())
+#~ env["BUILD_DATE"] = time.ctime(time.time())
+env["BUILD_DATE"] = time.strftime("%F %T %Z", time.localtime())
 
 if ARGUMENTS.get('VERBOSE') != "1":
 	env['CCCOMSTR'] = cformat("Compiling {c.green}$TARGET{c.default}")
@@ -55,6 +65,7 @@ env["LD"] = "%s-gcc" % env["TOOLCHAIN"]
 env["OBJCOPY"] = "%s-objcopy" % env["TOOLCHAIN"]
 env["OBJDUMP"] = "%s-objdump" % env["TOOLCHAIN"]
 env["SIZE"] = "%s-size" % env["TOOLCHAIN"]
+env["OOCD"] = "openocd"
 
 # Add platform specific things
 env.Append(CPPPATH = [Dir("platforms/%s" % env["PLATFORM"])])
@@ -122,14 +133,28 @@ print cformat("\tplatform = %s" % env["PLATFORM"])
 print cformat("\ttoolchain = %s" % env["TOOLCHAIN"])
 print ""
 
-
 # link the whole thing
 elf = env.Program(source = objs, target = "umeshfw_%s.elf" % env["PLATFORM"], LIBS = [env["LIBOCM3"], "c", "gcc", "nosys"])
+
+env.Append(BUILDERS = {"MakeVer": env.Builder(action = make_ver)})
+version = env.MakeVer(target = "platforms/%s/version.h" % env["PLATFORM"], source = None)
+Depends(elf, version)
 
 # convert to raw binary
 rawbin = env.Command("umeshfw_%s.bin" % env["PLATFORM"], elf, "$OBJCOPY -O binary $SOURCE $TARGET")
 
 elfsize = env.Command(source = elf, target = "elfsize", action = "$SIZE $SOURCE")
+
+program = env.Command(source = elf, target = "program", action = """
+	$OOCD \
+	-f interface/%s.cfg \
+	-f target/%s.cfg \
+	-c "init" \
+	-c "reset init" \
+	-c "flash write_image erase %s" \
+	-c "reset" \
+	-c "shutdown"
+""" % (env["OOCD_INTERFACE"], env["OOCD_TARGET"], str(elf[0])))
 
 # And do something by default.
 env.Alias("ubload", elf)

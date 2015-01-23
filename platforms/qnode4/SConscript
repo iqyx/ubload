@@ -6,6 +6,9 @@ objs = env.Object(source = ["ubload_qnode4.c"])
 env.Replace(LDSCRIPT = [File("qnode4.ld")])
 env.Replace(LIBOCM3 = "opencm3_stm32f4")
 env.Replace(TOOLCHAIN = "arm-none-eabi")
+env.Replace(OOCD_INTERFACE = "stlink-v2")
+env.Replace(OOCD_TARGET = "stm32f4x_stlink")
+
 env.Append(CFLAGS = [
 	"-DSTM32F4",
 	"-mthumb",

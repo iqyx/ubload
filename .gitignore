@@ -9,3 +9,6 @@
 *.srec
 *.fw
 
+.sconsign.dblite
+**/version.h
+

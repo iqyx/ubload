@@ -79,10 +79,34 @@ SCRIPT_DIR	= $(OPENCM3_DIR)/scripts
 # C flags
 
 CFLAGS		+= -Os -g -flto
-CFLAGS		+= -Wextra -Wshadow -Wimplicit-function-declaration
-CFLAGS		+= -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes
-CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
-CFLAGS		+= --std=gnu99 --specs=nano.specs
+CFLAGS		+= -Wall
+CFLAGS		+= -pedantic
+CFLAGS		+= -Winit-self
+CFLAGS		+= -Wreturn-local-addr
+#~ CFLAGS		+= -Werror
+CFLAGS		+= -Wswitch-default
+CFLAGS		+= -Wuninitialized
+CFLAGS		+= -Wundef
+CFLAGS		+= -Wstack-usage=256
+CFLAGS		+= -Wextra
+CFLAGS		+= -Wshadow
+CFLAGS		+= -Wimplicit-function-declaration
+CFLAGS		+= -Wcast-qual
+#~ CFLAGS		+= -Wwrite-strings
+#~ CFLAGS		+= -Wconversion
+CFLAGS		+= -Wlogical-op
+CFLAGS		+= -Wmissing-declarations
+CFLAGS		+= -Wno-missing-field-initializers
+CFLAGS		+= -Wstack-protector
+CFLAGS		+= -Wredundant-decls
+CFLAGS		+= -Wmissing-prototypes
+CFLAGS		+= -Wstrict-prototypes
+CFLAGS		+= -fno-common
+CFLAGS		+= -ffunction-sections
+CFLAGS		+= -fdata-sections
+CFLAGS		+= --std=c99
+CFLAGS		+= --specs=nano.specs
+
 
 ###############################################################################
 # C++ flags
@@ -174,6 +198,7 @@ flash: $(BINARY).flash
 clean:
 	@#printf "  CLEAN\n"
 	$(Q)$(RM) *.o *.d *.elf *.bin *.hex *.srec *.list *.map
+	$(Q)$(RM) ../../common/*.o ../../common/*.d
 
 stylecheck: $(STYLECHECKFILES:=.stylecheck)
 styleclean: $(STYLECHECKFILES:=.styleclean)

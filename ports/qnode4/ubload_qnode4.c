@@ -27,6 +27,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/stm32/usart.h>
+#include <libopencm3/stm32/spi.h>
 
 #include "config.h"
 #include "config_port.h"
@@ -36,6 +37,9 @@
 #include "cli.h"
 #include "u_assert.h"
 #include "u_log.h"
+#include "spi_flash.h"
+#include "sffs.h"
+#include "fw_flash.h"
 
 #if PORT_LED_BASIC == true
 struct led_basic led_stat;
@@ -47,8 +51,8 @@ uint32_t console;
 
 struct fw_runner runner;
 struct cli console_cli;
-
-
+struct flash_dev flash1;
+struct sffs fs;
 
 static int32_t mcu_init(void) {
 	rcc_periph_clock_enable(RCC_GPIOA);
@@ -59,6 +63,9 @@ static int32_t mcu_init(void) {
 			rcc_periph_clock_enable(RCC_USART1);
 		#endif
 	#endif
+
+	/* SPI flash memory. */
+	rcc_periph_clock_enable(RCC_SPI2);
 
 	return 0;
 }
@@ -76,6 +83,21 @@ static int32_t gpio_init(void) {
 		gpio_set_af(PORT_SERIAL_TX_PORT, PORT_SERIAL_AF, 1 << PORT_SERIAL_TX_PIN);
 		gpio_set_af(PORT_SERIAL_RX_PORT, PORT_SERIAL_AF, 1 << PORT_SERIAL_RX_PIN);
 	#endif
+
+	gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
+	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO13);
+	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO14);
+	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO15);
+
+	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO12);
+	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO13);
+	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO14);
+	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO15);
+
+	gpio_set_af(GPIOB, 5, GPIO13);
+	gpio_set_af(GPIOB, 5, GPIO14);
+	gpio_set_af(GPIOB, 5, GPIO15);
+	gpio_set(GPIOB, GPIO12);
 
 	return 0;
 }
@@ -118,9 +140,21 @@ int main(void) {
 	if (running_config.cli_enabled) {
 		cli_init(&console_cli, PORT_SERIAL_USART);
 		u_log_set_cli_print_handler(&console_cli);
-
 		cli_print_banner(&console_cli);
+	}
 
+
+	flash_init(&flash1, SPI2, GPIOB, 12);
+
+	/* TODO: do this only if invalid flash data found. */
+	/* sffs_format(&flash1); */
+	sffs_init(&fs);
+
+	if (sffs_mount(&fs, &flash1) == SFFS_MOUNT_OK) {
+		u_log(system_log, LOG_TYPE_INFO, "sffs: filesystem mounted successfully");
+	}
+
+	if (running_config.cli_enabled) {
 		int32_t wait_res = cli_wait_keypress(&console_cli);
 		cli_print(&console_cli, "\r\n\r\n");
 		if (wait_res == CLI_WAIT_KEYPRESS_ENTER) {

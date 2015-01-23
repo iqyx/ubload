@@ -51,11 +51,11 @@
 #define PORT_SERIAL_AF             GPIO_AF7
 
 /* Firmware runner configuration */
-#define FW_RUNNER_BASE             0x08004000
+#define FW_RUNNER_BASE             0x08008000
 
 /* Flash configuration */
 #define FLASH_SECTORS              6
-#define FLASH_FW_FIRST_SECTOR      1
+#define FLASH_FW_FIRST_SECTOR      2
 #define FLASH_PROGRAM_SIZE         3
 
 /* Circular log configuration */

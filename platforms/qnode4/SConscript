@@ -1,0 +1,17 @@
+Import("env")
+
+objs = env.Object(source = ["ubload_qnode4.c"])
+
+# target and architecture specific configuration
+env.Replace(LDSCRIPT = [File("qnode4.ld")])
+env.Replace(LIBOCM3 = "opencm3_stm32f4")
+env.Replace(TOOLCHAIN = "arm-none-eabi")
+env.Append(CFLAGS = [
+	"-DSTM32F4",
+	"-mthumb",
+	"-mcpu=cortex-m4",
+	"-mfloat-abi=hard",
+	"-mfpu=fpv4-sp-d16"
+])
+
+Return("objs")

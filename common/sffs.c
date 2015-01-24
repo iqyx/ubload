@@ -801,3 +801,63 @@ int32_t sffs_file_size(struct sffs *fs, uint32_t file_id, uint32_t *size) {
 }
 
 
+int32_t sffs_get_info(struct sffs *fs, struct sffs_info *info) {
+	if (u_assert(fs != NULL) ||
+	    u_assert(info != NULL)) {
+		return SFFS_GET_INFO_FAILED;
+	}
+
+	memset(info, 0, sizeof(struct sffs_info));
+
+	info->sectors_total = fs->sector_count;
+	for (uint32_t sector = 0; sector < fs->sector_count; sector++) {
+		struct sffs_metadata_header header;
+		sffs_cached_read(fs, sector * fs->sector_size, (uint8_t *)&header, sizeof(header));
+
+		switch (header.state) {
+			case SFFS_SECTOR_STATE_ERASED:
+				info->sectors_erased++;
+				break;
+			case SFFS_SECTOR_STATE_USED:
+				info->sectors_used++;
+				break;
+			case SFFS_SECTOR_STATE_FULL:
+				info->sectors_full++;
+				break;
+			case SFFS_SECTOR_STATE_DIRTY:
+				info->sectors_dirty++;
+				break;
+			case SFFS_SECTOR_STATE_OLD:
+				info->sectors_old++;
+				break;
+			default:
+				break;
+		}
+
+		for (uint32_t i = 0; i < fs->data_pages_per_sector; i++) {
+			uint32_t item_pos = sector * fs->sector_size + sizeof(struct sffs_metadata_header) + i * sizeof(struct sffs_metadata_item);
+			struct sffs_metadata_item item;
+			/* TODO: check return value */
+			sffs_cached_read(fs, item_pos, (uint8_t *)&item, sizeof(struct sffs_metadata_item));
+
+			switch (item.state) {
+				case SFFS_PAGE_STATE_ERASED:
+					info->pages_erased++;
+					break;
+				case SFFS_PAGE_STATE_USED:
+				case SFFS_PAGE_STATE_MOVING:
+				case SFFS_PAGE_STATE_RESERVED:
+					info->pages_used++;
+					break;
+				case SFFS_PAGE_STATE_OLD:
+					info->pages_old++;
+					break;
+				default:
+					break;
+			}
+			info->pages_total++;
+		}
+	}
+
+	return SFFS_GET_INFO_OK;
+}

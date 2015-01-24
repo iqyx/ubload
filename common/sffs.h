@@ -29,7 +29,6 @@
 #define _SFFS_H_
 
 
-
 #define SFFS_MASTER_MAGIC 0x93827485
 #define SFFS_METADATA_MAGIC 0x87985214
 #define SFFS_LABEL_SIZE 8
@@ -59,7 +58,6 @@ struct sffs_page {
 
 };
 
-
 struct __attribute__((__packed__)) sffs_master_page {
 	uint32_t magic;
 
@@ -68,6 +66,20 @@ struct __attribute__((__packed__)) sffs_master_page {
 	uint16_t sector_count;
 
 	uint8_t label[8];
+};
+
+struct sffs_info {
+	uint32_t sectors_total;
+	uint32_t sectors_erased;
+	uint32_t sectors_used;
+	uint32_t sectors_full;
+	uint32_t sectors_dirty;
+	uint32_t sectors_old;
+
+	uint32_t pages_total;
+	uint32_t pages_erased;
+	uint32_t pages_used;
+	uint32_t pages_old;
 };
 
 /* Erase state is set right after sector has been erased. Note that 0xFF is not
@@ -488,5 +500,10 @@ int32_t sffs_file_remove(struct sffs *fs, uint32_t file_id);
 int32_t sffs_file_size(struct sffs *fs, uint32_t file_id, uint32_t *size);
 #define SFFS_FILE_SIZE_OK 0
 #define SFFS_FILE_SIZE_FAILED -1
+
+int32_t sffs_get_info(struct sffs *fs, struct sffs_info *info);
+#define SFFS_GET_INFO_OK 0
+#define SFFS_GET_INFO_FAILED -1
+
 
 #endif

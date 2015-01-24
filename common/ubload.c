@@ -98,6 +98,24 @@ int main(void) {
 
 	if (sffs_mount(&fs, &flash1) == SFFS_MOUNT_OK) {
 		u_log(system_log, LOG_TYPE_INFO, "sffs: filesystem mounted successfully");
+
+		struct sffs_info info;
+		if (sffs_get_info(&fs, &info) == SFFS_GET_INFO_OK) {
+			u_log(system_log, LOG_TYPE_INFO,
+				"sffs: sectors t=%u e=%u u=%u f=%u d=%u o=%u, pages t=%u e=%u u=%u o=%u",
+				info.sectors_total,
+				info.sectors_erased,
+				info.sectors_used,
+				info.sectors_full,
+				info.sectors_dirty,
+				info.sectors_old,
+
+				info.pages_total,
+				info.pages_erased,
+				info.pages_used,
+				info.pages_old
+			);
+		}
 	}
 
 	if (running_config.cli_enabled) {

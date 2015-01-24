@@ -1,5 +1,5 @@
 /**
- * uBLoad bootloader entry point, qNode4 board port
+ * uBLoad bootloader entry point
  *
  * Copyright (C) 2015, Marek Koza, qyx@krtko.org
  *
@@ -23,84 +23,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/timer.h>
-#include <libopencm3/stm32/usart.h>
-#include <libopencm3/stm32/spi.h>
-
+#include "u_assert.h"
+#include "u_log.h"
 #include "config.h"
 #include "config_port.h"
 #include "led_basic.h"
 #include "fw_runner.h"
 #include "timer.h"
 #include "cli.h"
-#include "u_assert.h"
-#include "u_log.h"
 #include "spi_flash.h"
 #include "sffs.h"
 #include "fw_flash.h"
 
 #if PORT_LED_BASIC == true
-struct led_basic led_stat;
+	struct led_basic led_stat;
 #endif
 
 #if PORT_SERIAL == true
-uint32_t console;
+	uint32_t console;
 #endif
 
 struct fw_runner runner;
 struct cli console_cli;
 struct flash_dev flash1;
 struct sffs fs;
-
-static int32_t mcu_init(void) {
-	rcc_periph_clock_enable(RCC_GPIOA);
-	rcc_periph_clock_enable(RCC_GPIOB);
-
-	#if PORT_SERIAL == true
-		#if PORT_SERIAL_USART == USART1
-			rcc_periph_clock_enable(RCC_USART1);
-		#endif
-	#endif
-
-	/* SPI flash memory. */
-	rcc_periph_clock_enable(RCC_SPI2);
-
-	return 0;
-}
-
-
-static int32_t gpio_init(void) {
-
-	#if PORT_SERIAL == true
-		gpio_mode_setup(PORT_SERIAL_TX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, 1 << PORT_SERIAL_TX_PIN);
-		gpio_mode_setup(PORT_SERIAL_RX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, 1 << PORT_SERIAL_RX_PIN);
-
-		gpio_set_output_options(PORT_SERIAL_TX_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, 1 << PORT_SERIAL_TX_PIN);
-		gpio_set_output_options(PORT_SERIAL_RX_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, 1 << PORT_SERIAL_RX_PIN);
-
-		gpio_set_af(PORT_SERIAL_TX_PORT, PORT_SERIAL_AF, 1 << PORT_SERIAL_TX_PIN);
-		gpio_set_af(PORT_SERIAL_RX_PORT, PORT_SERIAL_AF, 1 << PORT_SERIAL_RX_PIN);
-	#endif
-
-	gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
-	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO13);
-	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO14);
-	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO15);
-
-	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO12);
-	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO13);
-	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO14);
-	gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO15);
-
-	gpio_set_af(GPIOB, 5, GPIO13);
-	gpio_set_af(GPIOB, 5, GPIO14);
-	gpio_set_af(GPIOB, 5, GPIO15);
-	gpio_set(GPIOB, GPIO12);
-
-	return 0;
-}
 
 
 int main(void) {
@@ -109,9 +55,9 @@ int main(void) {
 		u_log_init();
 	#endif
 
-	mcu_init();
+	port_mcu_init();
 	timer_init();
-	gpio_init();
+	port_gpio_init();
 	fw_runner_init(&runner, (void *)FW_RUNNER_BASE);
 
 	/* Initialize running configuration using defaults. */

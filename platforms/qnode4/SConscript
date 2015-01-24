@@ -1,6 +1,6 @@
 Import("env")
 
-objs = env.Object(source = ["ubload_qnode4.c"])
+objs = env.Object(source = ["config_port.c"])
 
 # target and architecture specific configuration
 env.Replace(LDSCRIPT = [File("qnode4.ld")])

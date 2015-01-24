@@ -22,6 +22,9 @@
 #ifndef _CONFIG_PORT_H_
 #define _CONFIG_PORT_H_
 
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/usart.h>
+#include <libopencm3/stm32/spi.h>
 #include "version.h"
 
 #define PORT_NAME                  "qNode4"
@@ -53,7 +56,7 @@
 /* Firmware runner configuration */
 #define FW_RUNNER_BASE             0x08008000
 
-/* Flash configuration */
+/* Internal flash configuration */
 #define FLASH_SECTORS              6
 #define FLASH_FW_FIRST_SECTOR      2
 #define FLASH_PROGRAM_SIZE         3
@@ -62,6 +65,20 @@
 #define PORT_CLOG                  true
 #define PORT_CLOG_BASE             0x20000000
 #define PORT_CLOG_SIZE             0x800
+
+/* External SPI fash configuration */
+#define PORT_SPI_FLASH             true
+
+
+
+
+int32_t port_mcu_init(void);
+#define PORT_MCU_INIT_OK 0
+#define PORT_MCU_INIT_FAILED -1
+
+int32_t port_gpio_init(void);
+#define PORT_GPIO_INIT_OK 0
+#define PORT_GPIO_INIT_FAILED -1
 
 #endif
 

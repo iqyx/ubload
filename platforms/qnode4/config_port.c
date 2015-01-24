@@ -44,7 +44,9 @@ int32_t port_mcu_init(void) {
 
 	/* SPI flash memory. */
 	#if PORT_SPI_FLASH == true
-		rcc_periph_clock_enable(RCC_SPI2);
+		#if PORT_SPI_FLASH_PORT == SPI2
+			rcc_periph_clock_enable(RCC_SPI2);
+		#endif
 	#endif
 
 	return 0;
@@ -53,6 +55,7 @@ int32_t port_mcu_init(void) {
 
 int32_t port_gpio_init(void) {
 
+	/* TODO: move led initialization here */
 	#if PORT_SERIAL == true
 		gpio_mode_setup(PORT_SERIAL_TX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, 1 << PORT_SERIAL_TX_PIN);
 		gpio_mode_setup(PORT_SERIAL_RX_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, 1 << PORT_SERIAL_RX_PIN);

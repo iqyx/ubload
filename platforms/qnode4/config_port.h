@@ -68,6 +68,9 @@
 
 /* External SPI fash configuration */
 #define PORT_SPI_FLASH             true
+#define PORT_SPI_FLASH_PORT        SPI2
+#define PORT_SPI_FLASH_CS_PORT     GPIOB
+#define PORT_SPI_FLASH_CS_PIN      12
 
 
 

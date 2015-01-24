@@ -90,7 +90,7 @@ int main(void) {
 	}
 
 
-	flash_init(&flash1, SPI2, GPIOB, 12);
+	flash_init(&flash1, PORT_SPI_FLASH_PORT, PORT_SPI_FLASH_CS_PORT, PORT_SPI_FLASH_CS_PIN);
 
 	/* TODO: do this only if invalid flash data found. */
 	/* sffs_format(&flash1); */

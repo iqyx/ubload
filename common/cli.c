@@ -35,6 +35,7 @@
 #include "fw_image.h"
 #include "xmodem.h"
 #include "u_log.h"
+#include "sffs.h"
 
 
 static int32_t cli_print_handler(const char *s, void *ctx) {
@@ -189,9 +190,7 @@ int32_t cli_confirm(struct cli *c) {
 }
 
 
-static int32_t cli_xmodem_recv_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
-	(void)ctx;
-
+static int32_t cli_xmodem_recv_to_flash_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
 	struct fw_image *fw = (struct fw_image *)ctx;
 	fw_image_program(fw, offset, data, len);
 
@@ -199,14 +198,25 @@ static int32_t cli_xmodem_recv_cb(uint8_t *data, uint32_t len, uint32_t offset, 
 }
 
 
-static int32_t cli_fw_image_progress_callback(struct fw_image *fw, uint32_t progress, uint32_t total, void *ctx) {
-	(void)fw;
+static int32_t cli_xmodem_recv_to_file_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
+	(void)offset;
+
+	struct sffs_file *f = (struct sffs_file *)ctx;
+
+	/* We are ignoring the offset. */
+	sffs_write(f, data, len);
+
+	return XMODEM_RECV_CB_OK;
+}
+
+
+static int32_t cli_progress_callback(uint32_t progress, uint32_t total, void *ctx) {
 	struct cli *c = (struct cli *)ctx;
 
 	char s[40];
 
 	cli_print(c, "\r");
-	lineedit_escape_print(&(c->le), ESC_ERASE_LINE_END, 0);
+	//~ lineedit_escape_print(&(c->le), ESC_ERASE_LINE_END, 0);
 	snprintf(s, sizeof(s), "progress %3u%%",(unsigned int)(progress * 100 / total));
 	cli_print(c, s);
 	cli_print(c, " [");
@@ -243,18 +253,18 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 	}
 
 	if (!strcmp(cmd, "erase")) {
-		fw_image_set_progress_callback(&main_fw, cli_fw_image_progress_callback, (void *)c);
+		fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
 		fw_image_erase(&main_fw);
 		cli_print(c, "\r\n");
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(cmd, "program")) {
+	if (!strcmp(cmd, "program xmodem")) {
 		cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
 
 		struct xmodem x;
 		xmodem_init(&x, c->console);
-		xmodem_set_recv_callback(&x, cli_xmodem_recv_cb, (void *)&main_fw);
+		xmodem_set_recv_callback(&x, cli_xmodem_recv_to_flash_cb, (void *)&main_fw);
 		xmodem_recv(&x);
 
 		/* Clear the terminal after xmodem transfer. */
@@ -264,6 +274,57 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 		cli_print(c, s);
 
 		xmodem_free(&x);
+
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(cmd, "download")) {
+		cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
+
+		struct sffs_file f;
+		sffs_open_id(&flash_fs, &f, 1000, SFFS_OVERWRITE);
+
+		struct xmodem x;
+		xmodem_init(&x, c->console);
+		xmodem_set_recv_callback(&x, cli_xmodem_recv_to_file_cb, (void *)&f);
+		xmodem_recv(&x);
+		cli_print(c, "\r\n");
+		xmodem_free(&x);
+
+		sffs_close(&f);
+
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(cmd, "program")) {
+
+		struct sffs_file f;
+		sffs_open_id(&flash_fs, &f, 1000, SFFS_READ);
+
+		uint32_t size = 0;
+		sffs_file_size(&flash_fs, 1000, &size);
+
+		char s[80];
+		snprintf(s, sizeof(s), "Flashing firmware %s, size %u bytes\r\n", "unknown", (unsigned int)(size));
+		cli_print(c, s);
+
+		cli_progress_callback(0, size, (void *)c);
+		int32_t len = 0;
+		uint32_t offset = 0;
+		uint32_t update = 0;
+		uint8_t buf[128];
+		while ((len = sffs_read(&f, buf, sizeof(buf))) > 0) {
+			fw_image_program(&main_fw, offset, buf, len);
+			offset += len;
+			update += len;
+
+			if (update >= 1024) {
+				cli_progress_callback(offset, size, (void *)c);
+				update = 0;
+			}
+		}
+		sffs_close(&f);
+		cli_print(c, "\r\n");
 
 		return CLI_EXECUTE_OK;
 	}

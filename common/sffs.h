@@ -80,6 +80,9 @@ struct sffs_info {
 	uint32_t pages_erased;
 	uint32_t pages_used;
 	uint32_t pages_old;
+
+	uint32_t space_total;
+	uint32_t space_used;
 };
 
 /* Erase state is set right after sector has been erased. Note that 0xFF is not
@@ -504,6 +507,7 @@ int32_t sffs_file_size(struct sffs *fs, uint32_t file_id, uint32_t *size);
 int32_t sffs_get_info(struct sffs *fs, struct sffs_info *info);
 #define SFFS_GET_INFO_OK 0
 #define SFFS_GET_INFO_FAILED -1
+
 
 
 #endif

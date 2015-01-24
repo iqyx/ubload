@@ -29,6 +29,7 @@
 
 /* TODO: meh */
 extern struct fw_image main_fw;
+extern struct sffs flash_fs;
 
 struct cli {
 	uint32_t console;

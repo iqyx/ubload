@@ -172,7 +172,7 @@ int32_t fw_image_erase(struct fw_image *fw) {
 	/* TODO: erase progress callback */
 
 	if (fw->progress_callback != NULL) {
-		fw->progress_callback(fw, 0, fw->sectors, fw->progress_callback_ctx);
+		fw->progress_callback(0, fw->sectors, fw->progress_callback_ctx);
 	}
 	flash_unlock();
 	for (uint32_t i = fw->base_sector; i < (fw->base_sector + fw->sectors); i++) {
@@ -180,7 +180,7 @@ int32_t fw_image_erase(struct fw_image *fw) {
 
 		/* Handle erase progress and abort. */
 		if (fw->progress_callback != NULL) {
-			if (fw->progress_callback(fw, i - fw->base_sector + 1, fw->sectors, fw->progress_callback_ctx) == FW_IMAGE_PROGRESS_CALLBACK_CANCEL) {
+			if (fw->progress_callback(i - fw->base_sector + 1, fw->sectors, fw->progress_callback_ctx) == FW_IMAGE_PROGRESS_CALLBACK_CANCEL) {
 				return FW_IMAGE_ERASE_FAILED;
 			}
 		}
@@ -207,7 +207,7 @@ int32_t fw_image_program(struct fw_image *fw, uint32_t offset, uint8_t *data, ui
 
 int32_t fw_image_set_progress_callback(
 	struct fw_image *fw,
-	int32_t (*progress_callback)(struct fw_image *fw, uint32_t progress, uint32_t total, void *ctx),
+	int32_t (*progress_callback)(uint32_t progress, uint32_t total, void *ctx),
 	void *ctx
 ) {
 	if (u_assert(fw != NULL) ||

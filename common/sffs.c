@@ -859,5 +859,8 @@ int32_t sffs_get_info(struct sffs *fs, struct sffs_info *info) {
 		}
 	}
 
+	info->space_total = fs->page_size * info->pages_total;
+	info->space_used = fs->page_size * info->pages_used;
+
 	return SFFS_GET_INFO_OK;
 }

@@ -28,7 +28,7 @@ struct fw_image {
 	uint8_t base_sector;
 	uint8_t sectors;
 
-	int32_t (*progress_callback)(struct fw_image *fw, uint32_t progress, uint32_t total, void *ctx);
+	int32_t (*progress_callback)(uint32_t progress, uint32_t total, void *ctx);
 	void *progress_callback_ctx;
 
 };
@@ -85,7 +85,7 @@ int32_t fw_image_program(struct fw_image *fw, uint32_t offset, uint8_t *data, ui
 
 int32_t fw_image_set_progress_callback(
 	struct fw_image *fw,
-	int32_t (*progress_callback)(struct fw_image *fw, uint32_t progress, uint32_t total, void *ctx),
+	int32_t (*progress_callback)(uint32_t progress, uint32_t total, void *ctx),
 	void *ctx
 );
 #define FW_IMAGE_SET_PROGRESS_CALLBACK_OK 0

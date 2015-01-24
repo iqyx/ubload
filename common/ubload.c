@@ -45,7 +45,7 @@
 struct fw_image main_fw;
 struct cli console_cli;
 struct flash_dev flash1;
-struct sffs fs;
+struct sffs flash_fs;
 
 
 int main(void) {
@@ -93,13 +93,13 @@ int main(void) {
 
 	/* TODO: do this only if invalid flash data found. */
 	/* sffs_format(&flash1); */
-	sffs_init(&fs);
+	sffs_init(&flash_fs);
 
-	if (sffs_mount(&fs, &flash1) == SFFS_MOUNT_OK) {
+	if (sffs_mount(&flash_fs, &flash1) == SFFS_MOUNT_OK) {
 		u_log(system_log, LOG_TYPE_INFO, "sffs: filesystem mounted successfully");
 
 		struct sffs_info info;
-		if (sffs_get_info(&fs, &info) == SFFS_GET_INFO_OK) {
+		if (sffs_get_info(&flash_fs, &info) == SFFS_GET_INFO_OK) {
 			u_log(system_log, LOG_TYPE_INFO,
 				"sffs: sectors t=%u e=%u u=%u f=%u d=%u o=%u, pages t=%u e=%u u=%u o=%u",
 				info.sectors_total,
@@ -113,6 +113,12 @@ int main(void) {
 				info.pages_erased,
 				info.pages_used,
 				info.pages_old
+			);
+			u_log(system_log, LOG_TYPE_INFO,
+				"sffs: space total %u bytes, used %u bytes, free %u bytes",
+				info.space_total,
+				info.space_used,
+				info.space_total - info.space_used
 			);
 		}
 	}

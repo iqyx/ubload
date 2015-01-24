@@ -25,10 +25,15 @@
 
 struct fw_image {
 	void *base;
+	uint8_t base_sector;
+	uint8_t sectors;
+
+	int32_t (*progress_callback)(struct fw_image *fw, uint32_t progress, uint32_t total, void *ctx);
+	void *progress_callback_ctx;
 
 };
 
-int32_t fw_image_init(struct fw_image *fw, void *base);
+int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint8_t sectors);
 #define FW_IMAGE_INIT_OK 0
 #define FW_IMAGE_INIT_FAILED -1
 
@@ -56,13 +61,38 @@ int32_t fw_flash_dump(struct cli *c, uint32_t addr, uint32_t len);
 #define FW_FLASH_DUMP_OK 0
 #define FW_FLASH_DUMP_FAILED -1
 
-int32_t fw_flash_erase_sector(uint8_t sector);
-#define FW_FLASH_ERASE_SECTOR_OK 0
-#define FW_FLASH_ERASE_SECTOR_FAILED -1
+int32_t fw_image_erase(struct fw_image *fw);
+#define FW_IMAGE_ERASE_OK 0
+#define FW_IMAGE_ERASE_FAILED -1
 
-int32_t fw_flash_program(uint32_t offset, uint8_t *data, uint32_t len);
-#define FW_FLASH_PROGRAM_OK 0
-#define FW_FLASH_PROGRAM_FAILED -1
+/**
+ * @brief Program firmware image page.
+ *
+ * Overwrite itself with new data in @a data buffer with length @a len placed
+ * @a offset bytes from the beginning. Firmware image must be erased first.
+ *
+ * @param fw A firmware image to overwrite.
+ * @param offset Offset of the new page to be written.
+ * @param data Buffer with data.
+ * @param len Length of @a data buffer.
+ *
+ * @return FW_IMAGE_PROGRAM_OK if the page was written successfully or
+ *         FW_IMAGE_PROGRAM_FAILED otherwise.
+ */
+int32_t fw_image_program(struct fw_image *fw, uint32_t offset, uint8_t *data, uint32_t len);
+#define FW_IMAGE_PROGRAM_OK 0
+#define FW_IMAGE_PROGRAM_FAILED -1
+
+int32_t fw_image_set_progress_callback(
+	struct fw_image *fw,
+	int32_t (*progress_callback)(struct fw_image *fw, uint32_t progress, uint32_t total, void *ctx),
+	void *ctx
+);
+#define FW_IMAGE_SET_PROGRESS_CALLBACK_OK 0
+#define FW_IMAGE_SET_PROGRESS_CALLBACK_FAILED -1
+#define FW_IMAGE_PROGRESS_CALLBACK_OK 0
+#define FW_IMAGE_PROGRESS_CALLBACK_FAILED -1
+#define FW_IMAGE_PROGRESS_CALLBACK_CANCEL -2
 
 #endif
 

@@ -192,9 +192,23 @@ int32_t cli_confirm(struct cli *c) {
 static int32_t cli_xmodem_recv_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
 	(void)ctx;
 
-	fw_flash_program(offset, data, len);
+	struct fw_image *fw = (struct fw_image *)ctx;
+	fw_image_program(fw, offset, data, len);
 
 	return XMODEM_RECV_CB_OK;
+}
+
+
+static int32_t cli_fw_image_progress_callback(struct fw_image *fw, uint32_t progress, uint32_t total, void *ctx) {
+	(void)fw;
+	struct cli *c = (struct cli *)ctx;
+
+	char s[20];
+	cli_print(c, "progress: ");
+	snprintf(s, sizeof(s), "%u of %u\r\n", (unsigned int)progress, (unsigned int)total);
+	cli_print(c, s);
+
+	return FW_IMAGE_PROGRESS_CALLBACK_OK;
 }
 
 
@@ -218,13 +232,8 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 	}
 
 	if (!strcmp(cmd, "erase")) {
-		for (uint32_t i = FLASH_FW_FIRST_SECTOR; i < FLASH_SECTORS; i++) {
-			char s[40];
-			snprintf(s, sizeof(s), "Erasing sector %u... ", (unsigned int)i);
-			cli_print(c, s);
-			fw_flash_erase_sector(i);
-			cli_print(c, "\r\n");
-		}
+		fw_image_set_progress_callback(&main_fw, cli_fw_image_progress_callback, (void *)c);
+		fw_image_erase(&main_fw);
 		return CLI_EXECUTE_OK;
 	}
 
@@ -233,7 +242,7 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 
 		struct xmodem x;
 		xmodem_init(&x, c->console);
-		xmodem_set_recv_callback(&x, cli_xmodem_recv_cb, (void *)c);
+		xmodem_set_recv_callback(&x, cli_xmodem_recv_cb, (void *)&main_fw);
 		xmodem_recv(&x);
 
 		/* Clear the terminal after xmodem transfer. */

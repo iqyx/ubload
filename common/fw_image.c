@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/flash.h>
@@ -37,13 +38,15 @@
 const char a[] = "0123456789abcdef";
 
 
-int32_t fw_image_init(struct fw_image *fw, void *base) {
+int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint8_t sectors) {
 	if (u_assert(fw != NULL)) {
 		return FW_IMAGE_INIT_FAILED;
 	}
 
 	memset(fw, 0, sizeof(struct fw_image));
 	fw->base = base;
+	fw->base_sector = base_sector;
+	fw->sectors = sectors;
 
 	return FW_IMAGE_INIT_OK;
 }
@@ -161,23 +164,60 @@ int32_t fw_flash_dump(struct cli *c, uint32_t addr, uint32_t len) {
 }
 
 
-int32_t fw_flash_erase_sector(uint8_t sector) {
+int32_t fw_image_erase(struct fw_image *fw) {
+	if (u_assert(fw != NULL)) {
+		return FW_IMAGE_ERASE_FAILED;
+	}
 
+	/* TODO: erase progress callback */
+
+	if (fw->progress_callback != NULL) {
+		fw->progress_callback(fw, 0, fw->sectors, fw->progress_callback_ctx);
+	}
 	flash_unlock();
-	flash_erase_sector(sector, FLASH_PROGRAM_SIZE);
+	for (uint32_t i = fw->base_sector; i < (fw->base_sector + fw->sectors); i++) {
+		flash_erase_sector(i, FW_IMAGE_PROGRAM_SPEED);
+
+		/* Handle erase progress and abort. */
+		if (fw->progress_callback != NULL) {
+			if (fw->progress_callback(fw, i - fw->base_sector + 1, fw->sectors, fw->progress_callback_ctx) == FW_IMAGE_PROGRESS_CALLBACK_CANCEL) {
+				return FW_IMAGE_ERASE_FAILED;
+			}
+		}
+	}
 	flash_lock();
 
-	return FW_FLASH_ERASE_SECTOR_OK;
+	return FW_IMAGE_ERASE_OK;
 }
 
 
-int32_t fw_flash_program(uint32_t offset, uint8_t *data, uint32_t len) {
+int32_t fw_image_program(struct fw_image *fw, uint32_t offset, uint8_t *data, uint32_t len) {
+	if (u_assert(fw != NULL) ||
+	    u_assert(data != NULL) ||
+	    u_assert(len > 0)) {
+		return FW_IMAGE_PROGRAM_FAILED;
+	}
 
 	flash_unlock();
-	flash_program(FW_IMAGE_BASE + offset, data, len);
+	flash_program((uint32_t)fw->base + offset, data, len);
 
-	return FW_FLASH_PROGRAM_OK;
+	return FW_IMAGE_PROGRAM_OK;
 }
 
 
+int32_t fw_image_set_progress_callback(
+	struct fw_image *fw,
+	int32_t (*progress_callback)(struct fw_image *fw, uint32_t progress, uint32_t total, void *ctx),
+	void *ctx
+) {
+	if (u_assert(fw != NULL) ||
+	    u_assert(progress_callback != NULL)) {
+		return FW_IMAGE_SET_PROGRESS_CALLBACK_FAILED;
+	}
+
+	fw->progress_callback = progress_callback;
+	fw->progress_callback_ctx = ctx;
+
+	return FW_IMAGE_SET_PROGRESS_CALLBACK_OK;
+}
 

@@ -42,7 +42,7 @@
 	uint32_t console;
 #endif
 
-struct fw_image fw;
+struct fw_image main_fw;
 struct cli console_cli;
 struct flash_dev flash1;
 struct sffs fs;
@@ -57,7 +57,7 @@ int main(void) {
 	port_mcu_init();
 	timer_init();
 	port_gpio_init();
-	fw_image_init(&fw, (void *)FW_IMAGE_BASE);
+	fw_image_init(&main_fw, (void *)FW_IMAGE_BASE, FW_IMAGE_BASE_SECTOR, FW_IMAGE_SECTORS);
 
 	/* Initialize running configuration using defaults. */
 	memcpy(&running_config, &default_config, sizeof(running_config));
@@ -135,7 +135,7 @@ int main(void) {
 				}
 
 				/* Reset on error, quit or reset command. */
-				fw_image_reset(&fw);
+				fw_image_reset(&main_fw);
 			}
 		} else {
 			/* Continue booting on error, no keypress or skip keypress
@@ -158,13 +158,13 @@ int main(void) {
 		if (running_config.cli_enabled) {
 			cli_print(&console_cli, "Enabling watchdog\r\n");
 		}
-		fw_image_watchdog_enable(&fw);
+		fw_image_watchdog_enable(&main_fw);
 	}
 
 	if (running_config.cli_enabled) {
 		cli_print(&console_cli, "Jumping to user code\r\n");
 	}
-	fw_image_jump(&fw);
+	fw_image_jump(&main_fw);
 
 	while (1) {
 		#if PORT_LED_BASIC == true

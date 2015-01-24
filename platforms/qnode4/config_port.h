@@ -55,11 +55,9 @@
 
 /* Firmware image configuration */
 #define FW_IMAGE_BASE              0x08008000
-
-/* Internal flash configuration */
-#define FLASH_SECTORS              6
-#define FLASH_FW_FIRST_SECTOR      2
-#define FLASH_PROGRAM_SIZE         3
+#define FW_IMAGE_SECTORS           4
+#define FW_IMAGE_BASE_SECTOR       2
+#define FW_IMAGE_PROGRAM_SPEED     3
 
 /* Circular log configuration */
 #define PORT_CLOG                  true

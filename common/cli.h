@@ -27,6 +27,9 @@
 
 #include "lineedit.h"
 
+/* TODO: meh */
+extern struct fw_image main_fw;
+
 struct cli {
 	uint32_t console;
 	struct lineedit le;

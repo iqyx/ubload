@@ -28,12 +28,11 @@
 #include "config.h"
 #include "config_port.h"
 #include "led_basic.h"
-#include "fw_runner.h"
 #include "timer.h"
 #include "cli.h"
 #include "spi_flash.h"
 #include "sffs.h"
-#include "fw_flash.h"
+#include "fw_image.h"
 
 #if PORT_LED_BASIC == true
 	struct led_basic led_stat;
@@ -43,7 +42,7 @@
 	uint32_t console;
 #endif
 
-struct fw_runner runner;
+struct fw_image fw;
 struct cli console_cli;
 struct flash_dev flash1;
 struct sffs fs;
@@ -58,7 +57,7 @@ int main(void) {
 	port_mcu_init();
 	timer_init();
 	port_gpio_init();
-	fw_runner_init(&runner, (void *)FW_RUNNER_BASE);
+	fw_image_init(&fw, (void *)FW_IMAGE_BASE);
 
 	/* Initialize running configuration using defaults. */
 	memcpy(&running_config, &default_config, sizeof(running_config));
@@ -136,7 +135,7 @@ int main(void) {
 				}
 
 				/* Reset on error, quit or reset command. */
-				fw_runner_reset(&runner);
+				fw_image_reset(&fw);
 			}
 		} else {
 			/* Continue booting on error, no keypress or skip keypress
@@ -159,13 +158,13 @@ int main(void) {
 		if (running_config.cli_enabled) {
 			cli_print(&console_cli, "Enabling watchdog\r\n");
 		}
-		fw_runner_watchdog_enable(&runner);
+		fw_image_watchdog_enable(&fw);
 	}
 
 	if (running_config.cli_enabled) {
 		cli_print(&console_cli, "Jumping to user code\r\n");
 	}
-	fw_runner_jump(&runner);
+	fw_image_jump(&fw);
 
 	while (1) {
 		#if PORT_LED_BASIC == true

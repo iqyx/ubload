@@ -32,7 +32,7 @@
 #include "cli.h"
 #include "timer.h"
 #include "lineedit.h"
-#include "fw_flash.h"
+#include "fw_image.h"
 #include "xmodem.h"
 #include "u_log.h"
 
@@ -208,7 +208,7 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 	}
 
 	if (!strcmp(cmd, "dump")) {
-		fw_flash_dump(FW_RUNNER_BASE, 0x1000);
+		fw_flash_dump(c, FW_IMAGE_BASE, 0x1000);
 		return CLI_EXECUTE_OK;
 	}
 

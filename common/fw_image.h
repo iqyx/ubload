@@ -1,5 +1,5 @@
 /**
- * uBLoad firmware flash routines
+ * uBLoad firmware image routines
  *
  * Copyright (C) 2015, Marek Koza, qyx@krtko.org
  *
@@ -22,8 +22,27 @@
 #ifndef _FW_FLASH_H_
 #define _FW_FLASH_H_
 
-/* TODO: meh */
-extern struct cli console_cli;
+
+struct fw_image {
+	void *base;
+
+};
+
+int32_t fw_image_init(struct fw_image *fw, void *base);
+#define FW_IMAGE_INIT_OK 0
+#define FW_IMAGE_INIT_FAILED -1
+
+int32_t fw_image_jump(struct fw_image *fw);
+#define FW_IMAGE_JUMP_OK 0
+#define FW_IMAGE_JUMP_FAILED -1
+
+int32_t fw_image_reset(struct fw_image *fw);
+#define FW_IMAGE_RESET_OK 0
+#define FW_IMAGE_RESET_FAILED -1
+
+int32_t fw_image_watchdog_enable(struct fw_image *fw);
+#define FW_IMAGE_WATCHDOG_ENABLE_OK 0
+#define FW_IMAGE_WATCHDOG_ENABLE_FAILED -1
 
 int32_t hex_to_string32(char *s, uint32_t n);
 #define HEX_TO_STRING32_OK 0
@@ -33,7 +52,7 @@ int32_t hex_to_string8(char *s, uint8_t n);
 #define HEX_TO_STRING8_OK 0
 #define HEX_TO_STRING8_FAILED -1
 
-int32_t fw_flash_dump(uint32_t addr, uint32_t len);
+int32_t fw_flash_dump(struct cli *c, uint32_t addr, uint32_t len);
 #define FW_FLASH_DUMP_OK 0
 #define FW_FLASH_DUMP_FAILED -1
 

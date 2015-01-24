@@ -53,8 +53,8 @@
 #define PORT_SERIAL_RX_PIN         7
 #define PORT_SERIAL_AF             GPIO_AF7
 
-/* Firmware runner configuration */
-#define FW_RUNNER_BASE             0x08008000
+/* Firmware image configuration */
+#define FW_IMAGE_BASE              0x08008000
 
 /* Internal flash configuration */
 #define FLASH_SECTORS              6

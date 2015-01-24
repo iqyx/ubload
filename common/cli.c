@@ -203,10 +203,21 @@ static int32_t cli_fw_image_progress_callback(struct fw_image *fw, uint32_t prog
 	(void)fw;
 	struct cli *c = (struct cli *)ctx;
 
-	char s[20];
-	cli_print(c, "progress: ");
-	snprintf(s, sizeof(s), "%u of %u\r\n", (unsigned int)progress, (unsigned int)total);
+	char s[40];
+
+	cli_print(c, "\r");
+	lineedit_escape_print(&(c->le), ESC_ERASE_LINE_END, 0);
+	snprintf(s, sizeof(s), "progress %3u%%",(unsigned int)(progress * 100 / total));
 	cli_print(c, s);
+	cli_print(c, " [");
+	for (uint32_t i = 0; i <= 72; i++) {
+		if (i <= (progress * 72 / total)) {
+			cli_print(c, "#");
+		} else {
+			cli_print(c, " ");
+		}
+	}
+	cli_print(c, "]");
 
 	return FW_IMAGE_PROGRESS_CALLBACK_OK;
 }
@@ -234,6 +245,7 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 	if (!strcmp(cmd, "erase")) {
 		fw_image_set_progress_callback(&main_fw, cli_fw_image_progress_callback, (void *)c);
 		fw_image_erase(&main_fw);
+		cli_print(c, "\r\n");
 		return CLI_EXECUTE_OK;
 	}
 

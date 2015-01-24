@@ -27,9 +27,9 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "u_assert.h"
 #include "sffs.h"
 #include "spi_flash.h"
-#include "u_assert.h"
 
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -37,7 +37,9 @@
 
 
 int32_t sffs_init(struct sffs *fs) {
-	assert(fs != NULL);
+	if (u_assert(fs != NULL)) {
+		return SFFS_INIT_FAILED;
+	}
 
 	/* nothing to initialize yet */
 	return SFFS_INIT_OK;
@@ -45,8 +47,10 @@ int32_t sffs_init(struct sffs *fs) {
 
 
 int32_t sffs_mount(struct sffs *fs, struct flash_dev *flash) {
-	assert(fs != NULL);
-	assert(flash != NULL);
+	if (u_assert(fs != NULL) ||
+	    u_assert(flash != NULL)) {
+		return SFFS_MOUNT_FAILED;
+	}
 
 	struct flash_info info;
 	if (flash_get_info(flash, &info) != FLASH_GET_INFO_OK) {
@@ -85,7 +89,9 @@ int32_t sffs_mount(struct sffs *fs, struct flash_dev *flash) {
 
 
 int32_t sffs_free(struct sffs *fs) {
-	assert(fs != NULL);
+	if (u_assert(fs != NULL)) {
+		return SFFS_FREE_FAILED;
+	}
 
 	/* nothing to do yet */
 	return SFFS_FREE_OK;
@@ -93,14 +99,18 @@ int32_t sffs_free(struct sffs *fs) {
 
 
 int32_t sffs_cache_clear(struct sffs *fs) {
-	assert(fs != NULL);
+	if (u_assert(fs != NULL)) {
+		return SFFS_CACHE_CLEAR_FAILED;
+	}
 
 	return SFFS_CACHE_CLEAR_OK;
 }
 
 
 int32_t sffs_format(struct flash_dev *flash) {
-	assert(flash != NULL);
+	if (u_assert(flash != NULL)) {
+		return SFFS_FORMAT_FAILED;
+	}
 
 	struct flash_info info;
 	flash_get_info(flash, &info);
@@ -123,8 +133,10 @@ int32_t sffs_format(struct flash_dev *flash) {
 
 
 int32_t sffs_sector_debug_print(struct sffs *fs, uint32_t sector) {
-	assert(fs != NULL);
-	assert(sector < fs->sector_count);
+	if (u_assert(fs != NULL) ||
+	    u_assert(sector < fs->sector_count)) {
+		return SFFS_SECTOR_DEBUG_PRINT_FAILED;
+	}
 
 	struct sffs_metadata_header header;
 	/* TODO: check return value */
@@ -136,7 +148,7 @@ int32_t sffs_sector_debug_print(struct sffs *fs, uint32_t sector) {
 	if (header.state == SFFS_SECTOR_STATE_FULL) sector_state = 'F';
 	if (header.state == SFFS_SECTOR_STATE_DIRTY) sector_state = 'D';
 	if (header.state == SFFS_SECTOR_STATE_OLD) sector_state = 'O';
-	printf("%04d [%c]: ", sector, sector_state);
+	printf("%04u [%c]: ", (unsigned int)sector, sector_state);
 
 	for (uint32_t i = 0; i < fs->data_pages_per_sector; i++) {
 		uint32_t item_pos = sector * fs->sector_size + sizeof(struct sffs_metadata_header) + i * sizeof(struct sffs_metadata_item);
@@ -159,7 +171,9 @@ int32_t sffs_sector_debug_print(struct sffs *fs, uint32_t sector) {
 
 
 int32_t sffs_debug_print(struct sffs *fs) {
-	assert(fs != NULL);
+	if (u_assert(fs != NULL)) {
+		return SFFS_DEBUG_PRINT_FAILED;
+	}
 
 	for (uint32_t sector = 0; sector < fs->sector_count; sector++) {
 		sffs_sector_debug_print(fs, sector);
@@ -170,8 +184,10 @@ int32_t sffs_debug_print(struct sffs *fs) {
 }
 
 int32_t sffs_metadata_header_check(struct sffs *fs, struct sffs_metadata_header *header) {
-	assert(header != NULL);
-	assert(fs != NULL);
+	if (u_assert(header != NULL) ||
+	    u_assert(fs != NULL)) {
+		return SFFS_METADATA_HEADER_CHECK_FAILED;
+	}
 
 	/* check magic number */
 	if (header->magic != SFFS_METADATA_MAGIC) {
@@ -183,8 +199,10 @@ int32_t sffs_metadata_header_check(struct sffs *fs, struct sffs_metadata_header 
 
 
 int32_t sffs_cached_read(struct sffs *fs, uint32_t addr, uint8_t *data, uint32_t len) {
-	assert(fs != NULL);
-	assert(data != NULL);
+	if (u_assert(fs != NULL) ||
+	    u_assert(data != NULL)) {
+		return SFFS_CACHED_READ_FAILED;
+	}
 
 	if (flash_page_read(fs->flash, addr, data, len) != FLASH_PAGE_READ_OK) {
 		return SFFS_CACHED_READ_FAILED;
@@ -195,8 +213,10 @@ int32_t sffs_cached_read(struct sffs *fs, uint32_t addr, uint8_t *data, uint32_t
 
 
 int32_t sffs_cached_write(struct sffs *fs, uint32_t addr, uint8_t *data, uint32_t len) {
-	assert(fs != NULL);
-	assert(data != NULL);
+	if (u_assert(fs != NULL) ||
+	    u_assert(data != NULL)) {
+		return SFFS_CACHED_WRITE_FAILED;
+	}
 
 	if (flash_page_write(fs->flash, addr, data, len) != FLASH_PAGE_WRITE_OK) {
 		return SFFS_CACHED_WRITE_FAILED;
@@ -207,8 +227,10 @@ int32_t sffs_cached_write(struct sffs *fs, uint32_t addr, uint8_t *data, uint32_
 
 
 int32_t sffs_find_page(struct sffs *fs, uint32_t file_id, uint32_t block, struct sffs_page *page) {
-	assert(fs != NULL);
-	assert(page != NULL);
+	if (u_assert(fs != NULL) ||
+	    u_assert(page != NULL)) {
+		return SFFS_FIND_PAGE_FAILED;
+	}
 
 	/* first we need to iterate over all sectors in the flash */
 	for (uint32_t sector = 0; sector < fs->sector_count; sector++) {
@@ -238,8 +260,10 @@ int32_t sffs_find_page(struct sffs *fs, uint32_t file_id, uint32_t block, struct
 
 
 int32_t sffs_find_erased_page(struct sffs *fs, struct sffs_page *page) {
-	assert(fs != NULL);
-	assert(page != NULL);
+	if (u_assert(fs != NULL) ||
+	    u_assert(page != NULL)) {
+		return SFFS_FIND_ERASED_PAGE_FAILED;
+	}
 
 	/* first we need to iterate over all sectors in the flash */
 	for (uint32_t sector = 0; sector < fs->sector_count; sector++) {
@@ -270,8 +294,10 @@ int32_t sffs_find_erased_page(struct sffs *fs, struct sffs_page *page) {
 
 
 int32_t sffs_page_addr(struct sffs *fs, struct sffs_page *page, uint32_t *addr) {
-	assert(page != NULL);
-	assert(addr != NULL);
+	if (u_assert(page != NULL) ||
+	    u_assert(addr != NULL)) {
+		return SFFS_PAGE_ADDR_FAILED;
+	}
 
 	*addr = page->sector * fs->sector_size + (fs->first_data_page + page->page) * fs->page_size;
 
@@ -280,8 +306,10 @@ int32_t sffs_page_addr(struct sffs *fs, struct sffs_page *page, uint32_t *addr) 
 
 
 int32_t sffs_sector_format(struct sffs *fs, uint32_t sector) {
-	assert(fs != NULL);
-	assert(sector < fs->sector_count);
+	if (u_assert(fs != NULL) ||
+	    u_assert(sector < fs->sector_count)) {
+		return SFFS_SECTOR_FORMAT_FAILED;
+	}
 
 	flash_sector_erase(fs->flash, sector * fs->sector_size);
 
@@ -311,8 +339,10 @@ int32_t sffs_sector_format(struct sffs *fs, uint32_t sector) {
 
 
 int32_t sffs_sector_collect_garbage(struct sffs *fs, uint32_t sector) {
-	assert(fs != NULL);
-	assert(sector < fs->sector_count);
+	if (u_assert(fs != NULL) ||
+	    u_assert(sector < fs->sector_count)) {
+		return SFFS_SECTOR_COLLECT_GARBAGE_FAILED;
+	}
 
 	struct sffs_metadata_header header;
 	if (sffs_cached_read(fs, sector * fs->sector_size, (uint8_t *)&header, sizeof(header)) != SFFS_CACHED_READ_OK) {
@@ -332,8 +362,10 @@ int32_t sffs_sector_collect_garbage(struct sffs *fs, uint32_t sector) {
 
 
 int32_t sffs_update_sector_metadata(struct sffs *fs, uint32_t sector) {
-	assert(fs != NULL);
-	assert(sector < fs->sector_count);
+	if (u_assert(fs != NULL) ||
+	    u_assert(sector < fs->sector_count)) {
+		return SFFS_UPDATE_SECTOR_METADATA_FAILED;
+	}
 
 	struct sffs_metadata_header header;
 	if (sffs_cached_read(fs, sector * fs->sector_size, (uint8_t *)&header, sizeof(header)) != SFFS_CACHED_READ_OK) {
@@ -395,7 +427,9 @@ int32_t sffs_update_sector_metadata(struct sffs *fs, uint32_t sector) {
 		/* New sector state cannot be greater than the old one
 		 * (otherwise the sector metadata would need to be erased first).
 		 * This would indicate error in metadata manipulation. */
-		assert(header.state <= old_state);
+		if (u_assert(header.state <= old_state)) {
+			return SFFS_UPDATE_SECTOR_METADATA_FAILED;
+		}
 
 		if (old_state != header.state) {
 
@@ -409,15 +443,17 @@ int32_t sffs_update_sector_metadata(struct sffs *fs, uint32_t sector) {
 		return SFFS_UPDATE_SECTOR_METADATA_OK;
 	}
 
-	assert(0);
+	u_assert(0);
 	return SFFS_UPDATE_SECTOR_METADATA_FAILED;
 }
 
 
 int32_t sffs_get_page_metadata(struct sffs *fs, struct sffs_page *page, struct sffs_metadata_item *item) {
-	assert(fs != NULL);
-	assert(page != NULL);
-	assert(item != NULL);
+	if (u_assert(fs != NULL) ||
+	    u_assert(page != NULL) ||
+	    u_assert(item != NULL)) {
+		return SFFS_GET_PAGE_METADATA_FAILED;
+	}
 
 	uint32_t item_pos = page->sector * fs->sector_size + sizeof(struct sffs_metadata_header) + page->page * sizeof(struct sffs_metadata_item);
 	sffs_cached_read(fs, item_pos, (uint8_t *)item, sizeof(struct sffs_metadata_item));
@@ -427,9 +463,11 @@ int32_t sffs_get_page_metadata(struct sffs *fs, struct sffs_page *page, struct s
 
 
 int32_t sffs_set_page_metadata(struct sffs *fs, struct sffs_page *page, struct sffs_metadata_item *item) {
-	assert(fs != NULL);
-	assert(page != NULL);
-	assert(item != NULL);
+	if (u_assert(fs != NULL) ||
+	    u_assert(page != NULL) ||
+	    u_assert(item != NULL)) {
+		return SFFS_SET_PAGE_MATEDATA_FAILED;
+	}
 
 	uint32_t item_pos = page->sector * fs->sector_size + sizeof(struct sffs_metadata_header) + page->page * sizeof(struct sffs_metadata_item);
 	sffs_cached_write(fs, item_pos, (uint8_t *)item, sizeof(struct sffs_metadata_item));
@@ -441,8 +479,10 @@ int32_t sffs_set_page_metadata(struct sffs *fs, struct sffs_page *page, struct s
 
 
 int32_t sffs_set_page_state(struct sffs *fs, struct sffs_page *page, uint8_t page_state) {
-	assert(fs != NULL);
-	assert(page != NULL);
+	if (u_assert(fs != NULL) ||
+	    u_assert(page != NULL)) {
+		return SFFS_SET_PAGE_STATE_FAILED;
+	}
 
 	struct sffs_metadata_item item;
 	sffs_get_page_metadata(fs, page, &item);
@@ -454,7 +494,9 @@ int32_t sffs_set_page_state(struct sffs *fs, struct sffs_page *page, uint8_t pag
 
 
 int32_t sffs_check_file_opened(struct sffs_file *f) {
-	assert(f != NULL);
+	if (u_assert(f != NULL)) {
+		return SFFS_CHECK_FILE_OPENED_FAILED;
+	}
 
 	/* file is probably not opened. TODO: better check */
 	if (f->file_id == 0 || f->fs == NULL) {
@@ -466,9 +508,11 @@ int32_t sffs_check_file_opened(struct sffs_file *f) {
 
 
 int32_t sffs_open_id(struct sffs *fs, struct sffs_file *f, uint32_t file_id, uint32_t mode) {
-	assert(fs != NULL);
-	assert(f != NULL);
-	assert(file_id != 0xffff);
+	if (u_assert(fs != NULL) ||
+	    u_assert(f != NULL) ||
+	    u_assert(file_id != 0xffff)) {
+		return SFFS_OPEN_ID_FAILED;
+	}
 
 	switch (mode) {
 		case SFFS_OVERWRITE:
@@ -501,7 +545,9 @@ int32_t sffs_open_id(struct sffs *fs, struct sffs_file *f, uint32_t file_id, uin
 
 
 int32_t sffs_close(struct sffs_file *f) {
-	assert(f != NULL);
+	if (u_assert(f != NULL)) {
+		return SFFS_CLOSE_FAILED;
+	}
 
 	if (sffs_check_file_opened(f) != SFFS_CHECK_FILE_OPENED_OK) {
 		return SFFS_CLOSE_FAILED;
@@ -515,8 +561,10 @@ int32_t sffs_close(struct sffs_file *f) {
 
 
 int32_t sffs_write(struct sffs_file *f, unsigned char *buf, uint32_t len) {
-	assert(f != NULL);
-	assert(buf != NULL);
+	if (u_assert(f != NULL) ||
+	    u_assert(buf != NULL)) {
+		return -1;
+	}
 
 	if (sffs_check_file_opened(f) != SFFS_CHECK_FILE_OPENED_OK) {
 		return -1;
@@ -568,10 +616,12 @@ int32_t sffs_write(struct sffs_file *f, unsigned char *buf, uint32_t len) {
 
 		//~ printf("writing buf[%d-%d] to page %d, offset %d, length %d\n", source_offset, source_offset + dest_len, i, dest_offset, dest_len);
 
-		assert(source_offset < len);
-		assert(dest_offset < f->fs->page_size);
-		assert(dest_len <= f->fs->page_size);
-		assert(dest_len <= len);
+		if (u_assert(source_offset < len) ||
+		    u_assert(dest_offset < f->fs->page_size) ||
+		    u_assert(dest_len <= f->fs->page_size) ||
+		    u_assert(dest_len <= len)) {
+			return -1;
+		}
 
 		/* TODO: write actual data */
 		memcpy(&(page_data[dest_offset]), &(buf[source_offset]), dest_len);
@@ -615,9 +665,11 @@ int32_t sffs_write(struct sffs_file *f, unsigned char *buf, uint32_t len) {
 
 
 int32_t sffs_read(struct sffs_file *f, unsigned char *buf, uint32_t len) {
-	assert(f != NULL);
-	assert(buf != NULL);
-	assert(len > 0);
+	if (u_assert(f != NULL) ||
+	    u_assert(buf != NULL) ||
+	    u_assert(len > 0)) {
+		return -1;
+	}
 
 	if (sffs_check_file_opened(f) != SFFS_CHECK_FILE_OPENED_OK) {
 		return -1;
@@ -664,10 +716,12 @@ int32_t sffs_read(struct sffs_file *f, unsigned char *buf, uint32_t len) {
 			/* length of data to be writte is the difference between cropped data */
 			dest_len = data_end - data_start + 1;
 
-			assert(source_offset < len);
-			assert(dest_offset < f->fs->page_size);
-			assert(dest_len <= f->fs->page_size);
-			assert(dest_len <= len);
+			if (u_assert(source_offset < len) ||
+			    u_assert(dest_offset < f->fs->page_size) ||
+			    u_assert(dest_len <= f->fs->page_size) ||
+			    u_assert(dest_len <= len)) {
+				return -1;
+			}
 
 			//~ printf("reading from page %d, offset %d, length %d to  to buf[%d-%d]\n", i, dest_offset, dest_len, source_offset, source_offset + dest_len);
 			memcpy(&(buf[source_offset]), &(page_data[dest_offset]), dest_len);
@@ -686,14 +740,24 @@ int32_t sffs_read(struct sffs_file *f, unsigned char *buf, uint32_t len) {
 
 
 int32_t sffs_seek(struct sffs_file *f, uint32_t pos) {
-	assert(f != NULL);
+	if (u_assert(f != NULL)) {
+		return SFFS_SEEK_OK;
+	}
+
+	if (sffs_check_file_opened(f) != SFFS_CHECK_FILE_OPENED_OK) {
+		return SFFS_SEEK_FAILED;
+	}
+
+	f->pos = pos;
 
 	return SFFS_SEEK_OK;
 }
 
 
 int32_t sffs_file_remove(struct sffs *fs, uint32_t file_id) {
-	assert(fs != NULL);
+	if (u_assert(fs != NULL)) {
+		return SFFS_FILE_REMOVE_FAILED;
+	}
 
 	/* cannot remove filesystem metadata file */
 	if (file_id == 0) {
@@ -717,7 +781,9 @@ int32_t sffs_file_remove(struct sffs *fs, uint32_t file_id) {
 
 
 int32_t sffs_file_size(struct sffs *fs, uint32_t file_id, uint32_t *size) {
-	assert(fs != NULL);
+	if (u_assert(fs != NULL)) {
+		return SFFS_FILE_SIZE_FAILED;
+	}
 
 	uint32_t block = 0;
 	uint32_t total_size = 0;

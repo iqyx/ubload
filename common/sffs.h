@@ -230,6 +230,7 @@ int32_t sffs_format(struct flash_dev *flash);
 
 int32_t sffs_sector_debug_print(struct sffs *fs, uint32_t sector);
 #define SFFS_SECTOR_DEBUG_PRINT_OK 0
+#define SFFS_SECTOR_DEBUG_PRINT_FAILED -1
 
 /**
  * Print filesystem structure to stdout. It can help to visualize  how pages and
@@ -241,6 +242,7 @@ int32_t sffs_sector_debug_print(struct sffs *fs, uint32_t sector);
  */
 int32_t sffs_debug_print(struct sffs *fs);
 #define SFFS_DEBUG_PRINT_OK 0
+#define SFFS_DEBUG_PRINT_FAILED -1
 
 /**
  * Perform various checks on metadata page header to find any inconsistencies.

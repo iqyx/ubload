@@ -329,8 +329,14 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(cmd, "test")) {
-		u_log(system_log, LOG_TYPE_INFO, "test");
+	if (!strcmp(cmd, "verify")) {
+		uint8_t hash[64];
+
+		fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
+		fw_image_hash_compare(&main_fw, (uint8_t *)FW_IMAGE_BASE, 65536, hash);
+
+		cli_print(c, "\r\n");
+		return CLI_EXECUTE_OK;
 	}
 
 	cli_print(c, "Unknown command '");

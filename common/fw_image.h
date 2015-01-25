@@ -94,5 +94,11 @@ int32_t fw_image_set_progress_callback(
 #define FW_IMAGE_PROGRESS_CALLBACK_FAILED -1
 #define FW_IMAGE_PROGRESS_CALLBACK_CANCEL -2
 
+int32_t fw_image_hash_compare(struct fw_image *fw, uint8_t *data, uint32_t len, uint8_t *hash);
+#define FW_IMAGE_HASH_OK 0
+#define FW_IMAGE_HASH_FAILED -1
+
+
+
 #endif
 

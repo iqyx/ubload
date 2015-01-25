@@ -82,6 +82,10 @@ env.Append(CPPPATH = [Dir("common")])
 objs.append(env.Object(source = [File(Glob("lineedit/*.c"))]))
 env.Append(CPPPATH = [Dir("lineedit")])
 
+# Add crypto library
+objs.append(env.Object(source = [File(Glob("crypto/*.c"))]))
+env.Append(CPPPATH = [Dir("crypto")])
+
 env.Append(LINKFLAGS = [
 	env["CFLAGS"],
 	"--static",

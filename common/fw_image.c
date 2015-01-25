@@ -34,6 +34,7 @@
 #include "config_port.h"
 #include "fw_image.h"
 #include "cli.h"
+#include "sha2.h"
 
 const char a[] = "0123456789abcdef";
 
@@ -221,3 +222,37 @@ int32_t fw_image_set_progress_callback(
 	return FW_IMAGE_SET_PROGRESS_CALLBACK_OK;
 }
 
+
+int32_t fw_image_hash_compare(struct fw_image *fw, uint8_t *data, uint32_t len, uint8_t *hash) {
+	if (u_assert(fw != NULL) ||
+	    u_assert(hash != NULL)) {
+		return FW_IMAGE_HASH_FAILED;
+	}
+
+	sha512_ctx ctx;
+	sha512_init(&ctx);
+
+	if (fw->progress_callback != NULL) {
+		fw->progress_callback(0, len, fw->progress_callback_ctx);
+	}
+
+	uint32_t rem = len;
+	while (rem > 0) {
+		uint32_t part_len = 1024;
+		if (rem < part_len) {
+			part_len = rem;
+		}
+
+		sha512_update(&ctx, data, part_len);
+
+		rem -= part_len;
+		data += part_len;
+		if (fw->progress_callback != NULL) {
+			fw->progress_callback(len - rem, len, fw->progress_callback_ctx);
+		}
+	}
+	uint8_t computed_hash[64];
+	sha512_final(&ctx, &computed_hash);
+
+	return FW_IMAGE_HASH_OK;
+}

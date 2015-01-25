@@ -2,19 +2,21 @@
 
 import argparse
 import struct
-
+import hashlib
 
 class section_magic:
 	verification = 0x6ef44bc0
 	verified = 0x1eda84bc
 	dummy = 0xba50911a
 	firmware = 0x40b80c0f
+	sha512 = 0xb6eb9721
 
 section_names = {
 	section_magic.verification: "verification",
 	section_magic.verified: "verified",
 	section_magic.dummy: "dummy",
-	section_magic.firmware: "firmware"
+	section_magic.firmware: "firmware",
+	section_magic.sha512: "sha512 hash",
 }
 
 def build_section(section_magic, data):
@@ -45,7 +47,7 @@ def print_section(data, offset, indent):
 	# Get this section data only
 	section_data = data[:length]
 	section_data_offset = offset + 8
-	print "%ssection %s at 0x%08x, data 0x%08x, len %u bytes" % ("\t" * indent, section_name, offset, section_data_offset, length)
+	print "%s%s section at 0x%08x, data 0x%08x, len %u bytes" % ("\t" * indent, section_name, offset, section_data_offset, length)
 
 	while len(section_data) > 0:
 		section_data, section_data_offset = print_section(section_data, section_data_offset, indent + 1)
@@ -132,14 +134,16 @@ try:
 		fw_verified += build_section(section_magic.firmware, f.read())
 except:
 	print "Cannot read input file '%s'" % args.binfile
+	exit(1)
 
 
 # Now the verified section is complete. Compute required hashes and other
 # authentication data.
-# TODO:
-# Append some dummy data for now.
-fw_verification += build_section(section_magic.dummy, "dummy data")
-
+if args.hash_type == "sha512":
+	fw_verification += build_section(section_magic.sha512, hashlib.sha512(fw_verified).digest())
+else:
+	print "Unknown hash specified."
+	exit(1)
 # This variable contains full firmware image with all required parts
 # Verified and verification sections are always present. Verification
 # section can be empty.
@@ -154,5 +158,6 @@ try:
 		f.write(fw_image)
 except:
 	print "Cannot write output firmware file '%s'" % args.fwfile
+	exit(1)
 
 

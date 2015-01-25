@@ -61,6 +61,8 @@ int32_t cli_confirm(struct cli *c);
 #define CLI_CONFIRM_NO 0
 #define CLI_CONFIRM_FAILED -1
 
+int32_t cli_progress_callback(uint32_t progress, uint32_t total, void *ctx);
+
 int32_t cli_execute(struct cli *c, char *cmd);
 #define CLI_EXECUTE_OK 0
 #define CLI_EXECUTE_FAILED -1

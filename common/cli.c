@@ -210,7 +210,7 @@ static int32_t cli_xmodem_recv_to_file_cb(uint8_t *data, uint32_t len, uint32_t 
 }
 
 
-static int32_t cli_progress_callback(uint32_t progress, uint32_t total, void *ctx) {
+int32_t cli_progress_callback(uint32_t progress, uint32_t total, void *ctx) {
 	struct cli *c = (struct cli *)ctx;
 
 	char s[40];
@@ -228,6 +228,10 @@ static int32_t cli_progress_callback(uint32_t progress, uint32_t total, void *ct
 		}
 	}
 	cli_print(c, "]");
+
+	if (progress == total) {
+		cli_print(c, "\r\n");
+	}
 
 	return FW_IMAGE_PROGRESS_CALLBACK_OK;
 }
@@ -330,12 +334,8 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 	}
 
 	if (!strcmp(cmd, "verify")) {
-		uint8_t hash[64];
-
 		fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
-		fw_image_hash_compare(&main_fw, (uint8_t *)FW_IMAGE_BASE, 65536, hash);
-
-		cli_print(c, "\r\n");
+		fw_image_verify(&main_fw);
 		return CLI_EXECUTE_OK;
 	}
 

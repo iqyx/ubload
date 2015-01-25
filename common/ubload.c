@@ -129,7 +129,6 @@ int main(void) {
 		if (wait_res == CLI_WAIT_KEYPRESS_ENTER) {
 
 			cli_print(&console_cli, "uBLoad command line interface, type <help> to show available commands.\r\n\r\n");
-			log_cbuffer_printf(system_log, LOG_TYPE_INFO, "test");
 
 			int32_t cli_res = cli_run(&console_cli);
 			if (cli_res == CLI_RUN_BOOT) {
@@ -152,6 +151,13 @@ int main(void) {
 
 	/* TODO: check firmware header here */
 	/* TODO: check firmware integrity here */
+	fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)&console_cli);
+	if (fw_image_verify(&main_fw) != FW_IMAGE_VERIFY_OK) {
+		u_log(system_log, LOG_TYPE_CRIT, "Required firmware verification failed, requesting reset.");
+		timer_wait_ms(2000);
+		fw_image_reset(&main_fw);
+	}
+
 	/* TODO: authenticate firmware here */
 
 	/* TODO: flash here if bad header is found or firmware integrity check
@@ -162,13 +168,13 @@ int main(void) {
 	/* Boot here. */
 	if (running_config.watchdog_enabled) {
 		if (running_config.cli_enabled) {
-			cli_print(&console_cli, "Enabling watchdog\r\n");
+			u_log(system_log, LOG_TYPE_INFO, "Enabling watchdog");
 		}
 		fw_image_watchdog_enable(&main_fw);
 	}
 
 	if (running_config.cli_enabled) {
-		cli_print(&console_cli, "Jumping to user code\r\n");
+		u_log(system_log, LOG_TYPE_INFO, "Jumping to user code");
 	}
 	fw_image_jump(&main_fw);
 

@@ -48,6 +48,10 @@ int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint
 	fw->base = base;
 	fw->base_sector = base_sector;
 	fw->sectors = sectors;
+	fw->parsed = false;
+	fw->verified = false;
+	fw->authenticated = false;
+	fw->offset = 0;
 
 	return FW_IMAGE_INIT_OK;
 }
@@ -58,12 +62,16 @@ int32_t fw_image_jump(struct fw_image *fw) {
 		return FW_IMAGE_JUMP_FAILED;
 	}
 
+	if (fw->parsed == false) {
+		return FW_IMAGE_JUMP_FAILED;
+	}
+
 	register uint32_t msp __asm("msp");
 	typedef void (*t_app_entry)(void);
 
 	/* application vector table is positioned at the starting address +
 	 * size of the header (1KB) */
-	const uint32_t *vector_table = (uint32_t *)((uint8_t *)fw->base + 0x400);
+	const uint32_t *vector_table = (uint32_t *)((uint8_t *)fw->base + fw->offset);
 
 	/* load application entry point to app_entry function pointer */
 	t_app_entry app_entry = (t_app_entry)(vector_table[1]);
@@ -187,6 +195,7 @@ int32_t fw_image_erase(struct fw_image *fw) {
 		}
 	}
 	flash_lock();
+	fw->parsed = false;
 
 	return FW_IMAGE_ERASE_OK;
 }
@@ -201,6 +210,7 @@ int32_t fw_image_program(struct fw_image *fw, uint32_t offset, uint8_t *data, ui
 
 	flash_unlock();
 	flash_program((uint32_t)fw->base + offset, data, len);
+	fw->parsed = false;
 
 	return FW_IMAGE_PROGRAM_OK;
 }
@@ -226,7 +236,7 @@ int32_t fw_image_set_progress_callback(
 int32_t fw_image_hash_compare(struct fw_image *fw, uint8_t *data, uint32_t len, uint8_t *hash) {
 	if (u_assert(fw != NULL) ||
 	    u_assert(hash != NULL)) {
-		return FW_IMAGE_HASH_FAILED;
+		return FW_IMAGE_HASH_COMPARE_FAILED;
 	}
 
 	sha512_ctx ctx;
@@ -252,7 +262,179 @@ int32_t fw_image_hash_compare(struct fw_image *fw, uint8_t *data, uint32_t len, 
 		}
 	}
 	uint8_t computed_hash[64];
-	sha512_final(&ctx, &computed_hash);
+	sha512_final(&ctx, computed_hash);
 
-	return FW_IMAGE_HASH_OK;
+	if (!memcmp(computed_hash, hash, sizeof(computed_hash))) {
+		return FW_IMAGE_HASH_COMPARE_OK;
+	}
+
+	return FW_IMAGE_HASH_COMPARE_FAILED;
+}
+
+
+int32_t fw_image_parse_section(struct fw_image *fw, uint8_t **section_base, struct fw_image_section *section) {
+	if (u_assert(fw != NULL) ||
+	    u_assert(section != NULL)) {
+		return FW_IMAGE_PARSE_SECTION_FAILED;
+	}
+
+	uint32_t magic = 0;
+	magic = magic << 8 | *(*section_base);
+	magic = magic << 8 | *(*section_base + 1);
+	magic = magic << 8 | *(*section_base + 2);
+	magic = magic << 8 | *(*section_base + 3);
+
+	switch (magic) {
+		case FW_IMAGE_SECTION_MAGIC_VERIFIED:
+			section->type = FW_IMAGE_SECTION_TYPE_VERIFIED;
+			break;
+		case FW_IMAGE_SECTION_MAGIC_VERIFICATION:
+			section->type = FW_IMAGE_SECTION_TYPE_VERIFICATION;
+			break;
+		case FW_IMAGE_SECTION_MAGIC_DUMMY:
+			section->type = FW_IMAGE_SECTION_TYPE_DUMMY;
+			break;
+		case FW_IMAGE_SECTION_MAGIC_FIRMWARE:
+			section->type = FW_IMAGE_SECTION_TYPE_FIRMWARE;
+			break;
+		case FW_IMAGE_SECTION_MAGIC_SHA512:
+			section->type = FW_IMAGE_SECTION_TYPE_SHA512;
+			break;
+		default:
+			return FW_IMAGE_PARSE_SECTION_OK;
+	}
+
+	uint32_t len = 0;
+	len = len << 8 | *(*section_base + 4);
+	len = len << 8 | *(*section_base + 5);
+	len = len << 8 | *(*section_base + 6);
+	len = len << 8 | *(*section_base + 7);
+
+	/* TODO: check if the whole section fits inside the flash space */
+	section->len = len;
+	section->data = *section_base + 8;
+
+	/* Advance to the next section */
+	*section_base += 8 + len;
+
+	return FW_IMAGE_PARSE_SECTION_OK;
+}
+
+
+int32_t fw_image_parse(struct fw_image *fw) {
+	if (u_assert(fw != NULL)) {
+		return FW_IMAGE_PARSE_FAILED;
+	}
+
+	bool parse_ok = true;
+	u_log(system_log, LOG_TYPE_INFO, "fw_image: parsing firmware image...");
+
+	uint8_t *section_base = fw->base;
+	uint8_t *section_end = 0;
+
+	/* Try to parse top level sections - verified and verification sections. */
+	if ((fw_image_parse_section(fw, &section_base, &fw->verified_section) != FW_IMAGE_PARSE_SECTION_OK) ||
+	    (fw_image_parse_section(fw, &section_base, &fw->verification_section) != FW_IMAGE_PARSE_SECTION_OK)) {
+		parse_ok = false;
+		goto end;
+	}
+	if ((fw->verified_section.type != FW_IMAGE_SECTION_TYPE_VERIFIED) ||
+	    (fw->verification_section.type != FW_IMAGE_SECTION_TYPE_VERIFICATION)) {
+		parse_ok = false;
+		goto end;
+	}
+
+	/* Parse all subsections in the verified section. */
+	fw->have_firmware = false;
+	section_base = fw->verified_section.data;
+	section_end = section_base + fw->verified_section.len;
+	while (section_base < section_end) {
+		struct fw_image_section subsection;
+		if (fw_image_parse_section(fw, &section_base, &subsection) != FW_IMAGE_PARSE_SECTION_OK) {
+			parse_ok = false;
+			goto end;
+		}
+		switch (subsection.type) {
+			case FW_IMAGE_SECTION_TYPE_DUMMY:
+				break;
+			case FW_IMAGE_SECTION_TYPE_FIRMWARE:
+				fw->have_firmware = true;
+				fw->offset = subsection.data - fw->base;
+				u_log(system_log, LOG_TYPE_INFO, "fw_image: firmware vector table found at 0x%08x", subsection.data);
+				break;
+			default:
+				parse_ok = false;
+				goto end;
+				break;
+		}
+
+	}
+
+	/* Parse all subsections in the verification section. */
+	fw->have_hash = false;
+	section_base = fw->verification_section.data;
+	section_end = section_base + fw->verification_section.len;
+	while (section_base < section_end) {
+		struct fw_image_section subsection;
+		if (fw_image_parse_section(fw, &section_base, &subsection) != FW_IMAGE_PARSE_SECTION_OK) {
+			parse_ok = false;
+			goto end;
+		}
+		switch (subsection.type) {
+			case FW_IMAGE_SECTION_TYPE_DUMMY:
+				break;
+			case FW_IMAGE_SECTION_TYPE_SHA512:
+				fw->have_hash = true;
+				fw->hash = subsection.data;
+				fw->hash_type = FW_IMAGE_SECTION_HASH_SHA512;
+				break;
+			default:
+				parse_ok = false;
+				goto end;
+				break;
+		}
+
+	}
+
+end:
+	if (parse_ok == true) {
+		u_log(system_log, LOG_TYPE_INFO, "fw_image: firmware structure check & parsing OK");
+		fw->parsed = true;
+		return FW_IMAGE_PARSE_OK;
+	} else {
+		u_log(system_log, LOG_TYPE_CRIT, "fw_image: firmware structure check & parsing failed");
+		fw->parsed = false;
+		return FW_IMAGE_PARSE_FAILED;
+	}
+}
+
+
+int32_t fw_image_verify(struct fw_image *fw) {
+	if (u_assert(fw != NULL)) {
+		return FW_IMAGE_VERIFY_FAILED;
+	}
+
+	/* If the firmware is not parsed, parse it first. */
+	if (fw->parsed == false) {
+		if (fw_image_parse(fw) != FW_IMAGE_PARSE_OK) {
+			return FW_IMAGE_VERIFY_FAILED;
+		}
+	}
+
+	if (fw->have_hash == false) {
+		u_log(system_log, LOG_TYPE_CRIT, "fw_image: verify: no known firmware hash available");
+		fw->verified = false;
+		return FW_IMAGE_VERIFY_FAILED;
+	}
+
+	u_log(system_log, LOG_TYPE_INFO, "fw_image: verifying firmware integrity...");
+	if (fw_image_hash_compare(&main_fw, fw->verified_section.data, fw->verified_section.len, fw->hash) == FW_IMAGE_HASH_COMPARE_OK) {
+		u_log(system_log, LOG_TYPE_INFO, "fw_image: firmware verification OK");
+		fw->verified = true;
+		return FW_IMAGE_VERIFY_OK;
+	} else {
+		u_log(system_log, LOG_TYPE_CRIT, "fw_image: firmware verification failed");
+		fw->verified = false;
+		return FW_IMAGE_VERIFY_FAILED;
+	}
 }

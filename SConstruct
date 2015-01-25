@@ -107,6 +107,7 @@ env.Append(CFLAGS = [
 	"-Wall",
 	"-Wextra",
 	"-pedantic",
+	#~ "-Werror",
 	"-Winit-self",
 	"-Wreturn-local-addr",
 	"-Wswitch-default",

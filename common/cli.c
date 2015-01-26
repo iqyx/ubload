@@ -340,6 +340,7 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 	}
 
 	if (!strcmp(cmd, "authenticate")) {
+		fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
 		fw_image_authenticate(&main_fw);
 		return CLI_EXECUTE_OK;
 	}

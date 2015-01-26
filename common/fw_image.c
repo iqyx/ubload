@@ -63,6 +63,7 @@ int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint
 	fw->verified = false;
 	fw->authenticated = false;
 	fw->offset = 0;
+	fw->progress_callback = NULL;
 
 	return FW_IMAGE_INIT_OK;
 }
@@ -206,7 +207,8 @@ int32_t fw_image_erase(struct fw_image *fw) {
 		}
 	}
 	flash_lock();
-	fw->parsed = false;
+
+	fw_image_init(fw, fw->base, fw->base_sector, fw->sectors);
 
 	return FW_IMAGE_ERASE_OK;
 }
@@ -221,7 +223,9 @@ int32_t fw_image_program(struct fw_image *fw, uint32_t offset, uint8_t *data, ui
 
 	flash_unlock();
 	flash_program((uint32_t)fw->base + offset, data, len);
-	fw->parsed = false;
+	flash_lock();
+
+	fw_image_init(fw, fw->base, fw->base_sector, fw->sectors);
 
 	return FW_IMAGE_PROGRAM_OK;
 }
@@ -259,19 +263,25 @@ int32_t fw_image_hash_compare(struct fw_image *fw, uint8_t *data, uint32_t len, 
 	}
 
 	uint32_t rem = len;
+	uint32_t last_progress = 0;
 	while (rem >= SHA512_BLOCK_SIZE) {
 		sha512_block(&ctx, data);
 
 		rem -= SHA512_BLOCK_SIZE;
 		data += SHA512_BLOCK_SIZE;
-		if (fw->progress_callback != NULL) {
+		last_progress += SHA512_BLOCK_SIZE;
+
+		if ((fw->progress_callback != NULL) && (last_progress > 4096)) {
 			fw->progress_callback(len - rem, len, fw->progress_callback_ctx);
+			last_progress = 0;
 		}
 	}
 	sha512_final(&ctx, data, len);
 	uint8_t computed_hash[SHA512_HASH_SIZE];
 	sha512_get(&ctx, computed_hash, 0, SHA512_HASH_SIZE);
-	fw->progress_callback(len, len, fw->progress_callback_ctx);
+	if (fw->progress_callback != NULL) {
+		fw->progress_callback(len, len, fw->progress_callback_ctx);
+	}
 
 	if (!memcmp(computed_hash, hash, sizeof(computed_hash))) {
 		return FW_IMAGE_HASH_COMPARE_OK;
@@ -463,7 +473,7 @@ int32_t fw_image_authenticate(struct fw_image *fw) {
 	/* If the firmware is not parsed, parse it first. */
 	if (fw->parsed == false) {
 		if (fw_image_parse(fw) != FW_IMAGE_PARSE_OK) {
-			return FW_IMAGE_VERIFY_FAILED;
+			return FW_IMAGE_AUTHENTICATE_FAILED;
 		}
 	}
 

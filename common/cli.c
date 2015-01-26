@@ -339,6 +339,11 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 		return CLI_EXECUTE_OK;
 	}
 
+	if (!strcmp(cmd, "authenticate")) {
+		fw_image_authenticate(&main_fw);
+		return CLI_EXECUTE_OK;
+	}
+
 	cli_print(c, "Unknown command '");
 	cli_print(c, cmd);
 	cli_print(c, "'\r\n");

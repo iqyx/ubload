@@ -34,6 +34,7 @@
 #define FW_IMAGE_SECTION_MAGIC_DUMMY 0xba50911a
 #define FW_IMAGE_SECTION_MAGIC_FIRMWARE 0x40b80c0f
 #define FW_IMAGE_SECTION_MAGIC_SHA512 0xb6eb9721
+#define FW_IMAGE_SECTION_MAGIC_ED25519 0x9d6b1a99
 
 /**
  * Type of hash digest available in the firmware image.
@@ -51,6 +52,7 @@ enum fw_image_section_type {
 	FW_IMAGE_SECTION_TYPE_DUMMY,
 	FW_IMAGE_SECTION_TYPE_FIRMWARE,
 	FW_IMAGE_SECTION_TYPE_SHA512,
+	FW_IMAGE_SECTION_TYPE_ED25519,
 };
 
 /**
@@ -124,8 +126,20 @@ struct fw_image {
 	bool have_hash;
 	uint8_t *hash;
 	enum fw_image_section_hash hash_type;
+
+	/**
+	 * Set to true if valid signature section was found.
+	 */
+	bool have_signature;
+	uint8_t *signature;
+
 };
 
+
+extern const uint8_t *test_priv_key;
+extern const uint8_t *test_pub_key;
+extern const uint8_t *test_message;
+extern const uint8_t *test_signature;
 
 int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint8_t sectors);
 #define FW_IMAGE_INIT_OK 0
@@ -204,6 +218,9 @@ int32_t fw_image_verify(struct fw_image *fw);
 #define FW_IMAGE_VERIFY_OK 0
 #define FW_IMAGE_VERIFY_FAILED -1
 
+int32_t fw_image_authenticate(struct fw_image *fw);
+#define FW_IMAGE_AUTHENTICATE_OK 0
+#define FW_IMAGE_AUTHENTICATE_FAILED -1
 
 #endif
 

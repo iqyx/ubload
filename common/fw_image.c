@@ -34,9 +34,20 @@
 #include "config_port.h"
 #include "fw_image.h"
 #include "cli.h"
-#include "sha2.h"
+#include "sha512.h"
+#include "edsign.h"
 
 const char a[] = "0123456789abcdef";
+
+const uint8_t *test_priv_key =  "\xb1\x8e\x1d\x00\x45\x99\x5e\xc3\xd0\x10\xc3\x87\xcc\xfe\xb9\x84\xd7\x83\xaf\x8f\xbb\x0f\x40\xfa\x7d\xb1\x26\xd8\x89\xf6\xda\xdd";
+const uint8_t *test_pub_key =   "\x77\xf4\x8b\x59\xca\xed\xa7\x77\x51\xed\x13\x8b\x0e\xc6\x67\xff\x50\xf8\x76\x8c\x25\xd4\x83\x09\xa8\xf3\x86\xa2\xba\xd1\x87\xfb";
+const uint8_t *test_message =   "\x91\x6c\x7d\x1d\x26\x8f\xc0\xe7\x7c\x1b\xef\x23\x84\x32\x57\x3c\x39\xbe\x57\x7b\xbe\xa0\x99\x89\x36\xad\xd2\xb5\x0a\x65\x31\x71"
+                                "\xce\x18\xa5\x42\xb0\xb7\xf9\x6c\x16\x91\xa3\xbe\x60\x31\x52\x28\x94\xa8\x63\x41\x83\xed\xa3\x87\x98\xa0\xc5\xd5\xd7\x9f\xbd\x01"
+                                "\xdd\x04\xa8\x64\x6d\x71\x87\x3b\x77\xb2\x21\x99\x8a\x81\x92\x2d\x81\x05\xf8\x92\x31\x63\x69\xd5\x22\x4c\x99\x83\x37\x2d\x23\x13"
+                                "\xc6\xb1\xf4\x55\x6e\xa2\x6b\xa4\x9d\x46\xe8\xb5\x61\xe0\xfc\x76\x63\x3a\xc9\x76\x6e\x68\xe2\x1f\xba\x7e\xdc\xa9\x3c\x4c\x74\x60"
+                                "\x37\x6d\x7f\x3a\xc2\x2f\xf3\x72\xc1\x8f\x61\x3f\x2a\xe2\xe8\x56\xaf\x40";
+const uint8_t *test_signature = "\x6b\xd7\x10\xa3\x68\xc1\x24\x99\x23\xfc\x7a\x16\x10\x74\x74\x03\x04\x0f\x0c\xc3\x08\x15\xa0\x0f\x9f\xf5\x48\xa8\x96\xbb\xda\x0b"
+                                "\x4e\xb2\xca\x19\xeb\xcf\x91\x7f\x0f\x34\x20\x0a\x9e\xdb\xad\x39\x01\xb6\x4a\xb0\x9c\xc5\xef\x7b\x9b\xcc\x3c\x40\xc0\xff\x75\x09";
 
 
 int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint8_t sectors) {
@@ -239,7 +250,8 @@ int32_t fw_image_hash_compare(struct fw_image *fw, uint8_t *data, uint32_t len, 
 		return FW_IMAGE_HASH_COMPARE_FAILED;
 	}
 
-	sha512_ctx ctx;
+	struct sha512_state ctx;
+
 	sha512_init(&ctx);
 
 	if (fw->progress_callback != NULL) {
@@ -247,22 +259,19 @@ int32_t fw_image_hash_compare(struct fw_image *fw, uint8_t *data, uint32_t len, 
 	}
 
 	uint32_t rem = len;
-	while (rem > 0) {
-		uint32_t part_len = 1024;
-		if (rem < part_len) {
-			part_len = rem;
-		}
+	while (rem >= SHA512_BLOCK_SIZE) {
+		sha512_block(&ctx, data);
 
-		sha512_update(&ctx, data, part_len);
-
-		rem -= part_len;
-		data += part_len;
+		rem -= SHA512_BLOCK_SIZE;
+		data += SHA512_BLOCK_SIZE;
 		if (fw->progress_callback != NULL) {
 			fw->progress_callback(len - rem, len, fw->progress_callback_ctx);
 		}
 	}
-	uint8_t computed_hash[64];
-	sha512_final(&ctx, computed_hash);
+	sha512_final(&ctx, data, len);
+	uint8_t computed_hash[SHA512_HASH_SIZE];
+	sha512_get(&ctx, computed_hash, 0, SHA512_HASH_SIZE);
+	fw->progress_callback(len, len, fw->progress_callback_ctx);
 
 	if (!memcmp(computed_hash, hash, sizeof(computed_hash))) {
 		return FW_IMAGE_HASH_COMPARE_OK;
@@ -299,6 +308,9 @@ int32_t fw_image_parse_section(struct fw_image *fw, uint8_t **section_base, stru
 			break;
 		case FW_IMAGE_SECTION_MAGIC_SHA512:
 			section->type = FW_IMAGE_SECTION_TYPE_SHA512;
+			break;
+		case FW_IMAGE_SECTION_MAGIC_ED25519:
+			section->type = FW_IMAGE_SECTION_TYPE_ED25519;
 			break;
 		default:
 			return FW_IMAGE_PARSE_SECTION_OK;
@@ -388,12 +400,15 @@ int32_t fw_image_parse(struct fw_image *fw) {
 				fw->hash = subsection.data;
 				fw->hash_type = FW_IMAGE_SECTION_HASH_SHA512;
 				break;
+			case FW_IMAGE_SECTION_TYPE_ED25519:
+				fw->have_signature = true;
+				fw->signature = subsection.data;
+				break;
 			default:
 				parse_ok = false;
 				goto end;
 				break;
 		}
-
 	}
 
 end:
@@ -436,5 +451,48 @@ int32_t fw_image_verify(struct fw_image *fw) {
 		u_log(system_log, LOG_TYPE_CRIT, "fw_image: firmware verification failed");
 		fw->verified = false;
 		return FW_IMAGE_VERIFY_FAILED;
+	}
+}
+
+
+int32_t fw_image_authenticate(struct fw_image *fw) {
+	if (u_assert(fw != NULL)) {
+		return FW_IMAGE_AUTHENTICATE_FAILED;
+	}
+
+	/* If the firmware is not parsed, parse it first. */
+	if (fw->parsed == false) {
+		if (fw_image_parse(fw) != FW_IMAGE_PARSE_OK) {
+			return FW_IMAGE_VERIFY_FAILED;
+		}
+	}
+
+	/* If the firmware is not integrity checked and the hash is not
+	 * computed yet, do it now. */
+	if (fw->verified == false) {
+		if (fw_image_verify(fw) != FW_IMAGE_VERIFY_OK) {
+			return FW_IMAGE_AUTHENTICATE_FAILED;
+		}
+
+	}
+
+	if (fw->have_signature == false) {
+		u_log(system_log, LOG_TYPE_CRIT, "fw_image: authenticate: no valid firmware signature found");
+		fw->authenticated = false;
+		return FW_IMAGE_AUTHENTICATE_FAILED;
+	}
+
+	u_assert(fw->signature != NULL);
+
+	u_log(system_log, LOG_TYPE_INFO, "fw_image: authenticating loaded firmware...");
+	/* TODO: determine hash size by its type */
+	if (edsign_verify(fw->signature, test_pub_key, fw->hash, 64)) {
+		u_log(system_log, LOG_TYPE_INFO, "fw_image: firmware authentication OK");
+		fw->authenticated = true;
+		return FW_IMAGE_AUTHENTICATE_OK;
+	} else {
+		u_log(system_log, LOG_TYPE_CRIT, "fw_image: firmware authentication failed");
+		fw->authenticated = false;
+		return FW_IMAGE_AUTHENTICATE_FAILED;
 	}
 }

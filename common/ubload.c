@@ -149,8 +149,6 @@ int main(void) {
 		}
 	}
 
-	/* TODO: check firmware header here */
-	/* TODO: check firmware integrity here */
 	fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)&console_cli);
 	if (fw_image_verify(&main_fw) != FW_IMAGE_VERIFY_OK) {
 		u_log(system_log, LOG_TYPE_CRIT, "Required firmware verification failed, requesting reset.");
@@ -158,7 +156,11 @@ int main(void) {
 		fw_image_reset(&main_fw);
 	}
 
-	/* TODO: authenticate firmware here */
+	if (fw_image_authenticate(&main_fw) != FW_IMAGE_AUTHENTICATE_OK) {
+		u_log(system_log, LOG_TYPE_CRIT, "Required firmware authentication failed, requesting reset.");
+		timer_wait_ms(2000);
+		fw_image_reset(&main_fw);
+	}
 
 	/* TODO: flash here if bad header is found or firmware integrity check
 	 * failed or authentication failed */

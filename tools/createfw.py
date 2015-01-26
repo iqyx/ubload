@@ -3,6 +3,7 @@
 import argparse
 import struct
 import hashlib
+import ed25519
 
 class section_magic:
 	verification = 0x6ef44bc0
@@ -10,6 +11,7 @@ class section_magic:
 	dummy = 0xba50911a
 	firmware = 0x40b80c0f
 	sha512 = 0xb6eb9721
+	ed25519 = 0x9d6b1a99
 
 section_names = {
 	section_magic.verification: "verification",
@@ -17,6 +19,7 @@ section_names = {
 	section_magic.dummy: "dummy",
 	section_magic.firmware: "firmware",
 	section_magic.sha512: "sha512 hash",
+	section_magic.ed25519: "ed25519 signature",
 }
 
 def build_section(section_magic, data):
@@ -80,8 +83,9 @@ parser.add_argument(
 )
 parser.add_argument(
 	"--sign", "-s",
-	action = "store_true",
-	help = "Sign the firmware image. Firmware hash is added too."
+	metavar = "KEY",
+	dest = "signfile",
+	help = "Sign the firmware image using specified private key."
 )
 parser.add_argument(
 	"--check", "-c",
@@ -139,11 +143,37 @@ except:
 
 # Now the verified section is complete. Compute required hashes and other
 # authentication data.
-if args.hash_type == "sha512":
-	fw_verification += build_section(section_magic.sha512, hashlib.sha512(fw_verified).digest())
-else:
-	print "Unknown hash specified."
-	exit(1)
+fw_hash = ""
+if args.check:
+	if args.hash_type == "sha512":
+		fw_hash = hashlib.sha512(fw_verified).digest()
+		fw_verification += build_section(section_magic.sha512, fw_hash)
+	else:
+		print "Unknown hash specified."
+		exit(1)
+
+
+fw_signature = ""
+if args.signfile:
+
+	if not args.check:
+		print "Firmware check hash required for signing, use --check"
+		exit(1)
+
+	priv_key = ""
+	try:
+		with open(args.signfile, "r") as f:
+			priv_key = f.read()
+	except:
+		print "Cannot read key file '%s'" % args.signfile
+		exit(1)
+
+	pub_key = ed25519.publickey(priv_key)
+
+	fw_signature = ed25519.signature(fw_hash, priv_key, pub_key)
+	fw_verification += build_section(section_magic.ed25519, fw_signature)
+
+
 # This variable contains full firmware image with all required parts
 # Verified and verification sections are always present. Verification
 # section can be empty.

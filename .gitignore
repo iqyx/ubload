@@ -12,3 +12,5 @@
 .sconsign.dblite
 **/version.h
 
+*.pyc
+*.key

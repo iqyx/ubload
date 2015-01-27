@@ -163,5 +163,5 @@ program = env.Command(source = elf, target = "program", action = """
 
 # And do something by default.
 env.Alias("ubload", elf)
-Default(elf, elfsize)
+Default(elf, elfsize, rawbin)
 

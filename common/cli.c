@@ -29,13 +29,15 @@
 
 #include "config.h"
 #include "config_port.h"
+#include "u_log.h"
+#include "u_assert.h"
 #include "cli.h"
 #include "timer.h"
 #include "lineedit.h"
 #include "fw_image.h"
 #include "xmodem.h"
-#include "u_log.h"
 #include "sffs.h"
+#include "pubkey_storage.h"
 
 
 static int32_t cli_print_handler(const char *s, void *ctx) {
@@ -345,6 +347,21 @@ int32_t cli_execute(struct cli *c, char *cmd) {
 		return CLI_EXECUTE_OK;
 	}
 
+	if (!strcmp(cmd, "pubkey print")) {
+		cli_cmd_pubkey_print(c);
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(cmd, "pubkey add")) {
+		cli_cmd_pubkey_add(c);
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(cmd, "pubkey lock")) {
+		cli_cmd_pubkey_lock(c);
+		return CLI_EXECUTE_OK;
+	}
+
 	cli_print(c, "Unknown command '");
 	cli_print(c, cmd);
 	cli_print(c, "'\r\n");
@@ -497,4 +514,84 @@ int32_t cli_print_banner(struct cli *c) {
 
 
 	return CLI_PRINT_BANNER_OK;
+}
+
+
+int32_t cli_print_key(struct cli *c, const uint8_t *key, uint32_t size) {
+	if (u_assert(c != NULL) ||
+	    u_assert(key != NULL) ||
+	    u_assert(size > 0)) {
+		return CLI_PRINT_KEY_FAILED;
+	}
+
+	cli_print(c, "[");
+	for (uint32_t i = 0; i < size; i++) {
+		char s[5];
+		snprintf(s, sizeof(s), "%02x", key[i]);
+		cli_print(c, s);
+	}
+	cli_print(c, "]");
+
+	return CLI_PRINT_KEY_OK;
+}
+
+
+int32_t cli_cmd_pubkey_print(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_PUBKEY_PRINT_FAILED;
+	}
+
+	/* Iterate over all slots. */
+	for (uint32_t i = 0; i < PUBKEY_STORAGE_SLOT_COUNT; i++) {
+		char s[20];
+		snprintf(s, sizeof(s), "Slot %u: ", (unsigned int)(i + 1));
+		cli_print(c, s);
+
+		int32_t slot_state = pubkey_storage_check_if_slot_empty(&(pubkey_storage_slots[i]));
+		if (slot_state == PUBKEY_STORAGE_CHECK_IF_SLOT_EMPTY_USED) {
+			if (pubkey_storage_verify_slot(&(pubkey_storage_slots[i])) == PUBKEY_STORAGE_VERIFY_SLOT_OK) {
+				lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_GREEN);
+				cli_print(c, "OK ");
+				lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+				cli_print_key(c, pubkey_storage_slots[i].pubkey, PUBKEY_STORAGE_SLOT_SIZE);
+			} else {
+				lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_RED);
+				cli_print(c, "invalid");
+				lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+			}
+
+		} else if (slot_state == PUBKEY_STORAGE_CHECK_IF_SLOT_EMPTY_LOCKED) {
+			lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_RED);
+			cli_print(c, "locked");
+			lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+		} else {
+			cli_print(c, "empty");
+		}
+		cli_print(c, "\r\n");
+	}
+
+	return CLI_CMD_PUBKEY_PRINT_OK;
+}
+
+
+int32_t cli_cmd_pubkey_add(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_PUBKEY_ADD_FAILED;
+	}
+
+	pubkey_storage_set_salt((uint8_t *)"aaa", 3);
+	pubkey_storage_set_slot_key(&(pubkey_storage_slots[0]), (uint8_t *)"aaaaaaaabbbbbbbbccccccccdddddddd", 32);
+
+	return CLI_CMD_PUBKEY_ADD_OK;
+}
+
+
+int32_t cli_cmd_pubkey_lock(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_PUBKEY_LOCK_FAILED;
+	}
+
+	pubkey_storage_lock_slot(&(pubkey_storage_slots[0]));
+
+	return CLI_CMD_PUBKEY_LOCK_OK;
 }

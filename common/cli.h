@@ -83,5 +83,21 @@ int32_t cli_print_banner(struct cli *c);
 #define CLI_PRINT_BANNER_OK 0
 #define CLI_PRINT_BANNER_FAILED -1
 
+int32_t cli_print_key(struct cli *c, const uint8_t *key, uint32_t size);
+#define CLI_PRINT_KEY_OK 0
+#define CLI_PRINT_KEY_FAILED -1
+
+int32_t cli_cmd_pubkey_print(struct cli *c);
+#define CLI_CMD_PUBKEY_PRINT_OK 0
+#define CLI_CMD_PUBKEY_PRINT_FAILED -1
+
+int32_t cli_cmd_pubkey_add(struct cli *c);
+#define CLI_CMD_PUBKEY_ADD_OK 0
+#define CLI_CMD_PUBKEY_ADD_FAILED -1
+
+int32_t cli_cmd_pubkey_lock(struct cli *c);
+#define CLI_CMD_PUBKEY_LOCK_OK 0
+#define CLI_CMD_PUBKEY_LOCK_FAILED -1
+
 #endif
 

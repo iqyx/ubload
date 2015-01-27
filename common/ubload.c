@@ -172,7 +172,7 @@ int main(void) {
 		if (running_config.cli_enabled) {
 			u_log(system_log, LOG_TYPE_INFO, "Enabling watchdog");
 		}
-		fw_image_watchdog_enable(&main_fw);
+		fw_image_watchdog_enable(&main_fw, 5000);
 	}
 
 	if (running_config.cli_enabled) {

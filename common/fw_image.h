@@ -153,7 +153,7 @@ int32_t fw_image_reset(struct fw_image *fw);
 #define FW_IMAGE_RESET_OK 0
 #define FW_IMAGE_RESET_FAILED -1
 
-int32_t fw_image_watchdog_enable(struct fw_image *fw);
+int32_t fw_image_watchdog_enable(struct fw_image *fw, uint32_t period);
 #define FW_IMAGE_WATCHDOG_ENABLE_OK 0
 #define FW_IMAGE_WATCHDOG_ENABLE_FAILED -1
 

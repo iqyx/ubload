@@ -103,8 +103,8 @@ int32_t fw_image_reset(struct fw_image *fw) {
 		return FW_IMAGE_RESET_FAILED;
 	}
 
-	/* TODO: remove this magic. */
-        *((unsigned long*)0xE000ED0C) = 0x05FA0004;
+	fw_image_watchdog_enable(fw, 200);
+
         while (1) {
 		;
 	}
@@ -114,12 +114,12 @@ int32_t fw_image_reset(struct fw_image *fw) {
 }
 
 
-int32_t fw_image_watchdog_enable(struct fw_image *fw) {
+int32_t fw_image_watchdog_enable(struct fw_image *fw, uint32_t period) {
 	if (u_assert(fw != NULL)) {
 		return FW_IMAGE_WATCHDOG_ENABLE_FAILED;
 	}
 
-	iwdg_set_period_ms(5000);
+	iwdg_set_period_ms(period);
 	iwdg_start();
 
 	return FW_IMAGE_WATCHDOG_ENABLE_OK;

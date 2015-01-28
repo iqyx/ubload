@@ -431,4 +431,48 @@ int32_t cli_print_key(struct cli *c, const uint8_t *key, uint32_t size) {
 }
 
 
+static uint8_t cli_hex_char_value(char c) {
+	if (c >= '0' && c <= '9') {
+		return c - '0';
+	}
+	if (c >= 'a' && c <= 'f') {
+		return c - 'a' + 10;
+	}
+	if (c >= 'A' && c <= 'F') {
+		return c - 'A' + 10;
+	}
+}
 
+
+int32_t cli_parse_key(struct cli *c, const char *s, uint8_t *key, uint32_t size) {
+	if (u_assert(c != NULL) ||
+	    u_assert(s != NULL) ||
+	    u_assert(key != NULL) ||
+	    u_assert(size > 0)) {
+		return CLI_PARSE_KEY_FAILED;
+	}
+
+	memset(key, 0, size);
+
+	uint32_t i = 0;
+	while (i < size && *s) {
+		uint8_t byte = 0;
+		if (*s) {
+			byte = cli_hex_char_value(*s);
+			s++;
+		}
+		if (*s) {
+			byte = byte << 4 | cli_hex_char_value(*s);
+			s++;
+		}
+		key[i] = byte;
+		i++;
+	}
+
+	/* Check the key length. */
+	if (*s || i != size) {
+		return CLI_PARSE_KEY_FAILED;
+	}
+
+	return CLI_PARSE_KEY_OK;
+}

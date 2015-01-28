@@ -85,6 +85,10 @@ int32_t cli_print_key(struct cli *c, const uint8_t *key, uint32_t size);
 #define CLI_PRINT_KEY_OK 0
 #define CLI_PRINT_KEY_FAILED -1
 
+int32_t cli_parse_key(struct cli *c, const char *s, uint8_t *key, uint32_t size);
+#define CLI_PARSE_KEY_OK 0
+#define CLI_PARSE_KEY_FAILED -1
+
 
 #endif
 

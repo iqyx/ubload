@@ -111,7 +111,10 @@ int32_t cli_cmd_pubkey_add(struct cli *c, const char *pubkey) {
 
 	/* TODO: parse pubkey here */
 	uint8_t key[PUBKEY_STORAGE_SLOT_SIZE];
-	memset(key, 0, sizeof(key));
+	if (cli_parse_key(c, pubkey, key, sizeof(key)) != CLI_PARSE_KEY_OK) {
+		cli_print(c, "Key parsing failed.\r\n");
+		return CLI_CMD_PUBKEY_ADD_FAILED;
+	}
 
 	/* Find first empty slot. */
 	uint32_t slot_num = UINT32_MAX;

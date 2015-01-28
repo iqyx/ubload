@@ -27,6 +27,8 @@
 
 #include "lineedit.h"
 
+#define CLI_MAX_ARGC 5
+
 /* TODO: meh */
 extern struct fw_image main_fw;
 extern struct sffs flash_fs;
@@ -63,7 +65,11 @@ int32_t cli_confirm(struct cli *c);
 
 int32_t cli_progress_callback(uint32_t progress, uint32_t total, void *ctx);
 
-int32_t cli_execute(struct cli *c, char *cmd);
+int32_t cli_parse_command(struct cli *c, char *cmd, uint32_t *argc, char *argv[], uint32_t max_argc);
+#define CLI_PARSE_COMMAND_OK 0
+#define CLI_PARSE_COMMAND_FAILED -1
+
+int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]);
 #define CLI_EXECUTE_OK 0
 #define CLI_EXECUTE_FAILED -1
 
@@ -75,9 +81,9 @@ int32_t cli_print_help_command(struct cli *c, char *cmd, char *help);
 #define CLI_PRINT_HELP_COMMAND_OK 0
 #define CLI_PRINT_HELP_COMMAND_FAILED -1
 
-int32_t cli_print_help(struct cli *c);
-#define CLI_PRINT_HELP_OK 0
-#define CLI_PRINT_HELP_FAILED -1
+int32_t cli_cmd_help(struct cli *c);
+#define CLI_CMD_HELP_OK 0
+#define CLI_CMD_HELP_FAILED -1
 
 int32_t cli_print_banner(struct cli *c);
 #define CLI_PRINT_BANNER_OK 0
@@ -98,6 +104,35 @@ int32_t cli_cmd_pubkey_add(struct cli *c);
 int32_t cli_cmd_pubkey_lock(struct cli *c);
 #define CLI_CMD_PUBKEY_LOCK_OK 0
 #define CLI_CMD_PUBKEY_LOCK_FAILED -1
+
+int32_t cli_cmd_program_xmodem(struct cli *c);
+#define CLI_CMD_PROGRAM_XMODEM_OK 0
+#define CLI_CMD_PROGRAM_XMODEM_FAILED -1
+
+int32_t cli_cmd_program_file(struct cli *c, char *file);
+#define CLI_CMD_PROGRAM_FILE_OK 0
+#define CLI_CMD_PROGRAM_FILE_FAILED -1
+
+int32_t cli_cmd_download(struct cli *c, char *file);
+#define CLI_CMD_DOWNLOAD_OK 0
+#define CLI_CMD_DOWNLOAD_FAILED -1
+
+int32_t cli_cmd_erase(struct cli *c);
+#define CLI_CMD_ERASE_OK 0
+#define CLI_CMD_ERASE_FAILED -1
+
+int32_t cli_cmd_dump(struct cli *c, uint32_t addr, uint32_t len);
+#define CLI_CMD_DUMP_OK 0
+#define CLI_CMD_DUMP_FAILED -1
+
+int32_t cli_cmd_verify_flash(struct cli *c);
+#define CLI_CMD_VERIFY_FLASH_OK 0
+#define CLI_CMD_VERIFY_FLASH_FAILED -1
+
+int32_t cli_cmd_authenticate_flash(struct cli *c);
+#define CLI_CMD_AUTHENTICATE_FLASH_OK 0
+#define CLI_CMD_AUTHENTICATE_FLASH_FAILED -1
+
 
 #endif
 

@@ -37,8 +37,6 @@
 #include "sha512.h"
 #include "edsign.h"
 
-const char a[] = "0123456789abcdef";
-
 const uint8_t *test_priv_key =  "\xb1\x8e\x1d\x00\x45\x99\x5e\xc3\xd0\x10\xc3\x87\xcc\xfe\xb9\x84\xd7\x83\xaf\x8f\xbb\x0f\x40\xfa\x7d\xb1\x26\xd8\x89\xf6\xda\xdd";
 const uint8_t *test_pub_key =   "\x77\xf4\x8b\x59\xca\xed\xa7\x77\x51\xed\x13\x8b\x0e\xc6\x67\xff\x50\xf8\x76\x8c\x25\xd4\x83\x09\xa8\xf3\x86\xa2\xba\xd1\x87\xfb";
 const uint8_t *test_message =   "\x91\x6c\x7d\x1d\x26\x8f\xc0\xe7\x7c\x1b\xef\x23\x84\x32\x57\x3c\x39\xbe\x57\x7b\xbe\xa0\x99\x89\x36\xad\xd2\xb5\x0a\x65\x31\x71"
@@ -123,65 +121,6 @@ int32_t fw_image_watchdog_enable(struct fw_image *fw, uint32_t period) {
 	iwdg_start();
 
 	return FW_IMAGE_WATCHDOG_ENABLE_OK;
-}
-
-/* TODO: authenticate */
-/* TODO: check firmware header + if it is valid according to configuration */
-/* TODO: check firmware integrity */
-
-
-int32_t hex_to_string32(char *s, uint32_t n) {
-
-	for (uint32_t i = 0; i < 8; i++) {
-		s[i] = a[(n >> ((7 - i) * 4)) & 0xf];
-	}
-	s[8] = '\0';
-
-	return HEX_TO_STRING32_OK;
-}
-
-
-int32_t hex_to_string8(char *s, uint8_t n) {
-
-	s[0] = a[n >> 4];
-	s[1] = a[n & 0xf];
-	s[2] = '\0';
-
-	return HEX_TO_STRING8_OK;
-}
-
-
-int32_t fw_flash_dump(struct cli *c, uint32_t addr, uint32_t len) {
-
-	for (uint32_t i = 0; i < len; i++) {
-		/* Print line header */
-		if ((i % 16) == 0) {
-			char s[9];
-			hex_to_string32(s, addr + i);
-			cli_print(c, "0x");
-			cli_print(c, s);
-			cli_print(c, ": ");
-		}
-
-		/* TODO: print byte here */
-		uint8_t byte = *((uint8_t *)(addr + i));
-		char bs[3];
-		hex_to_string8(bs, byte);
-		cli_print(c, bs);
-		cli_print(c, " ");
-
-		if ((i % 16) == 7) {
-			cli_print(c, " ");
-		}
-
-		if ((i % 16) == 15) {
-			cli_print(c, "\r\n");
-		}
-
-
-	}
-
-	return FW_FLASH_DUMP_OK;
 }
 
 

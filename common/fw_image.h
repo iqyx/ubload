@@ -157,18 +157,6 @@ int32_t fw_image_watchdog_enable(struct fw_image *fw, uint32_t period);
 #define FW_IMAGE_WATCHDOG_ENABLE_OK 0
 #define FW_IMAGE_WATCHDOG_ENABLE_FAILED -1
 
-int32_t hex_to_string32(char *s, uint32_t n);
-#define HEX_TO_STRING32_OK 0
-#define HEX_TO_STRING32_FAILED -1
-
-int32_t hex_to_string8(char *s, uint8_t n);
-#define HEX_TO_STRING8_OK 0
-#define HEX_TO_STRING8_FAILED -1
-
-int32_t fw_flash_dump(struct cli *c, uint32_t addr, uint32_t len);
-#define FW_FLASH_DUMP_OK 0
-#define FW_FLASH_DUMP_FAILED -1
-
 int32_t fw_image_erase(struct fw_image *fw);
 #define FW_IMAGE_ERASE_OK 0
 #define FW_IMAGE_ERASE_FAILED -1

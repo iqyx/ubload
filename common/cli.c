@@ -170,8 +170,10 @@ int32_t cli_run(struct cli *c) {
 			return CLI_RUN_BOOT;
 		}
 
-		/* TODO: parse the command here. */
-		cli_execute(c, cmd);
+		uint32_t argc = 0;
+		char *argv[CLI_MAX_ARGC];
+		cli_parse_command(c, cmd, &argc, argv, CLI_MAX_ARGC);
+		cli_execute(c, argc, argv);
 	}
 }
 
@@ -189,26 +191,6 @@ int32_t cli_confirm(struct cli *c) {
 	};
 
 	return CLI_CONFIRM_NO;
-}
-
-
-static int32_t cli_xmodem_recv_to_flash_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
-	struct fw_image *fw = (struct fw_image *)ctx;
-	fw_image_program(fw, offset, data, len);
-
-	return XMODEM_RECV_CB_OK;
-}
-
-
-static int32_t cli_xmodem_recv_to_file_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
-	(void)offset;
-
-	struct sffs_file *f = (struct sffs_file *)ctx;
-
-	/* We are ignoring the offset. */
-	sffs_write(f, data, len);
-
-	return XMODEM_RECV_CB_OK;
 }
 
 
@@ -239,131 +221,144 @@ int32_t cli_progress_callback(uint32_t progress, uint32_t total, void *ctx) {
 }
 
 
-int32_t cli_execute(struct cli *c, char *cmd) {
-	if (c == NULL || cmd == NULL) {
+int32_t cli_parse_command(struct cli *c, char *cmd, uint32_t *argc, char *argv[], uint32_t max_argc) {
+	if (u_assert(c != NULL) ||
+	    u_assert(cmd != NULL) ||
+	    u_assert(argc != NULL) ||
+	    u_assert(argv != NULL) ||
+	    u_assert(max_argc > 0)) {
+		return CLI_PARSE_COMMAND_FAILED;
+	}
+
+	/* Loop up to the maximum number of accepted arguments. */
+	*argc = 0;
+	while (*argc < max_argc) {
+		/* Eat all whitespaces first. */
+		while ((*cmd == ' ') && *cmd != '\0') {
+			cmd++;
+		}
+		if (*cmd == '\0') {
+			/* Return if end of string was reached. */
+			return CLI_PARSE_COMMAND_OK;
+		} else {
+			/* Another argument follows. Save its position and
+			 * increment argument count. */
+			argv[*argc] = cmd;
+			(*argc)++;
+		}
+		/* Move to the current argument end. */
+		while (*cmd != ' ') {
+			if (*cmd == '\0') {
+				return CLI_PARSE_COMMAND_OK;
+			}
+
+			cmd++;
+		}
+		/* And terminate it properly. */
+		*cmd = '\0';
+		cmd++;
+	}
+
+	return CLI_PARSE_COMMAND_OK;
+}
+
+
+int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
+	if (u_assert(c != NULL)) {
 		return CLI_EXECUTE_FAILED;
 	}
-
-	if (!strcmp(cmd, "")) {
+	if (argc == 0) {
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(cmd, "dump")) {
-		fw_flash_dump(c, FW_IMAGE_BASE, 0x1000);
-		return CLI_EXECUTE_OK;
-	}
-
-	if (!strcmp(cmd, "help")) {
-		cli_print_help(c);
-		return CLI_EXECUTE_OK;
-	}
-
-	if (!strcmp(cmd, "erase")) {
-		fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
-		fw_image_erase(&main_fw);
-		cli_print(c, "\r\n");
-		return CLI_EXECUTE_OK;
-	}
-
-	if (!strcmp(cmd, "program xmodem")) {
-		cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
-
-		struct xmodem x;
-		xmodem_init(&x, c->console);
-		xmodem_set_recv_callback(&x, cli_xmodem_recv_to_flash_cb, (void *)&main_fw);
-		xmodem_recv(&x);
-
-		/* Clear the terminal after xmodem transfer. */
-		cli_print(c, "                   \r\n");
-		char s[40];
-		snprintf(s, sizeof(s), "%u bytes programmed.\r\n", (unsigned int)(x.bytes_transferred));
-		cli_print(c, s);
-
-		xmodem_free(&x);
-
-		return CLI_EXECUTE_OK;
-	}
-
-	if (!strcmp(cmd, "download")) {
-		cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
-
-		struct sffs_file f;
-		sffs_open_id(&flash_fs, &f, 1000, SFFS_OVERWRITE);
-
-		struct xmodem x;
-		xmodem_init(&x, c->console);
-		xmodem_set_recv_callback(&x, cli_xmodem_recv_to_file_cb, (void *)&f);
-		xmodem_recv(&x);
-		cli_print(c, "\r\n");
-		xmodem_free(&x);
-
-		sffs_close(&f);
-
-		return CLI_EXECUTE_OK;
-	}
-
-	if (!strcmp(cmd, "program")) {
-
-		struct sffs_file f;
-		sffs_open_id(&flash_fs, &f, 1000, SFFS_READ);
-
-		uint32_t size = 0;
-		sffs_file_size(&flash_fs, 1000, &size);
-
-		char s[80];
-		snprintf(s, sizeof(s), "Flashing firmware %s, size %u bytes\r\n", "unknown", (unsigned int)(size));
-		cli_print(c, s);
-
-		cli_progress_callback(0, size, (void *)c);
-		int32_t len = 0;
-		uint32_t offset = 0;
-		uint32_t update = 0;
-		uint8_t buf[128];
-		while ((len = sffs_read(&f, buf, sizeof(buf))) > 0) {
-			fw_image_program(&main_fw, offset, buf, len);
-			offset += len;
-			update += len;
-
-			if (update >= 1024) {
-				cli_progress_callback(offset, size, (void *)c);
-				update = 0;
-			}
+	/* At least one argument is given. */
+	if (!strcmp(argv[0], "dump")) {
+		if (argc < 3) {
+			cli_print(c, "Missing argument(s).\r\n");
 		}
-		sffs_close(&f);
-		cli_print(c, "\r\n");
+		if (argc == 3) {
+			uint32_t origin = atoi(argv[1]);
+			uint32_t length = atoi(argv[2]);
 
+			cli_cmd_dump(c, FW_IMAGE_BASE + origin, length);
+		}
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(cmd, "verify")) {
-		fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
-		fw_image_verify(&main_fw);
+	if (!strcmp(argv[0], "help")) {
+		cli_cmd_help(c);
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(cmd, "authenticate")) {
-		fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
-		fw_image_authenticate(&main_fw);
+	if (!strcmp(argv[0], "erase")) {
+		cli_cmd_erase(c);
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(cmd, "pubkey print")) {
+	if (!strcmp(argv[0], "program")) {
+		if (argc == 1) {
+			cli_print(c, "Required argument is missing.\r\n");
+		}
+
+		if (argc == 2) {
+			if (!strcmp(argv[1], "xmodem")) {
+				cli_cmd_program_xmodem(c);
+			} else {
+				cli_cmd_program_file(c, argv[1]);
+			}
+
+		}
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(argv[0], "download")) {
+
+		if (argc == 1) {
+			cli_print(c, "Required argument is missing.\r\n");
+		}
+		if (argc == 2) {
+			cli_cmd_download(c, argv[1]);
+		}
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(argv[0], "verify")) {
+		if (argc == 1) {
+			cli_cmd_verify_flash(c);
+		}
+		if (argc == 2) {
+			cli_print(c, "Verification of a saved firmware image is not supported yet.\r\n");
+		}
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(argv[0], "authenticate")) {
+		if (argc == 1) {
+			cli_cmd_authenticate_flash(c);
+		}
+		if (argc == 2) {
+			cli_print(c, "Authentication of a saved firmware image is not supported yet.\r\n");
+		}
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(argv[0], "pubkey print")) {
 		cli_cmd_pubkey_print(c);
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(cmd, "pubkey add")) {
+	if (!strcmp(argv[0], "pubkey add")) {
 		cli_cmd_pubkey_add(c);
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(cmd, "pubkey lock")) {
+	if (!strcmp(argv[0], "pubkey lock")) {
 		cli_cmd_pubkey_lock(c);
 		return CLI_EXECUTE_OK;
 	}
 
 	cli_print(c, "Unknown command '");
-	cli_print(c, cmd);
+	cli_print(c, argv[0]);
 	cli_print(c, "'\r\n");
 
 	return CLI_EXECUTE_FAILED;
@@ -397,9 +392,9 @@ int32_t cli_print_help_command(struct cli *c, char *cmd, char *help) {
 }
 
 
-int32_t cli_print_help(struct cli *c) {
+int32_t cli_cmd_help(struct cli *c) {
 	if (c == NULL) {
-		return CLI_PRINT_HELP_FAILED;
+		return CLI_CMD_HELP_FAILED;
 	}
 
 	cli_print(c,
@@ -490,7 +485,7 @@ int32_t cli_print_help(struct cli *c) {
 	cli_print(c, "\r\n");
 
 
-	return CLI_PRINT_HELP_OK;
+	return CLI_CMD_HELP_OK;
 }
 
 
@@ -595,3 +590,218 @@ int32_t cli_cmd_pubkey_lock(struct cli *c) {
 
 	return CLI_CMD_PUBKEY_LOCK_OK;
 }
+
+
+static int32_t cli_xmodem_recv_to_flash_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
+	struct fw_image *fw = (struct fw_image *)ctx;
+	fw_image_program(fw, offset, data, len);
+
+	return XMODEM_RECV_CB_OK;
+}
+
+
+int32_t cli_cmd_program_xmodem(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_PROGRAM_XMODEM_FAILED;
+	}
+
+	cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
+
+	struct xmodem x;
+	xmodem_init(&x, c->console);
+	xmodem_set_recv_callback(&x, cli_xmodem_recv_to_flash_cb, (void *)&main_fw);
+	int32_t res = xmodem_recv(&x);
+
+	if (res == XMODEM_RECV_EOT) {
+		/* Clear the terminal after xmodem transfer. */
+		cli_print(c, "                   \r\n");
+		char s[40];
+		snprintf(s, sizeof(s), "%u bytes programmed.\r\n", (unsigned int)(x.bytes_transferred));
+		cli_print(c, s);
+	}
+	if (res == XMODEM_RECV_CANCEL) {
+		cli_print(c, "XMODEM transfer cancelled.\r\n");
+	}
+	if (res == XMODEM_RECV_TIMEOUT) {
+		cli_print(c, "XMODEM transfer timeout.\r\n");
+	}
+	xmodem_free(&x);
+
+	return CLI_CMD_PROGRAM_XMODEM_OK;
+}
+
+
+static int32_t cli_xmodem_recv_to_file_cb(uint8_t *data, uint32_t len, uint32_t offset, void *ctx) {
+	(void)offset;
+
+	struct sffs_file *f = (struct sffs_file *)ctx;
+
+	/* We are ignoring the offset. */
+	sffs_write(f, data, len);
+
+	return XMODEM_RECV_CB_OK;
+}
+
+
+/* TODO: convert file to file_id. */
+int32_t cli_cmd_program_file(struct cli *c, char *file) {
+	if (u_assert(c != NULL) ||
+	    u_assert(file != NULL)) {
+		return CLI_CMD_PROGRAM_FILE_FAILED;
+	}
+
+	struct sffs_file f;
+	sffs_open_id(&flash_fs, &f, 1000, SFFS_READ);
+
+	uint32_t size = 0;
+	sffs_file_size(&flash_fs, 1000, &size);
+
+	char s[80];
+	snprintf(s, sizeof(s), "Flashing firmware %s, size %u bytes\r\n", file, (unsigned int)(size));
+	cli_print(c, s);
+
+	cli_progress_callback(0, size, (void *)c);
+	int32_t len = 0;
+	uint32_t offset = 0;
+	uint32_t update = 0;
+	uint8_t buf[128];
+	while ((len = sffs_read(&f, buf, sizeof(buf))) > 0) {
+		fw_image_program(&main_fw, offset, buf, len);
+		offset += len;
+		update += len;
+
+		if (update >= 1024) {
+			cli_progress_callback(offset, size, (void *)c);
+			update = 0;
+		}
+	}
+	sffs_close(&f);
+	cli_print(c, "\r\n");
+
+	return CLI_CMD_PROGRAM_FILE_OK;
+}
+
+
+int32_t cli_cmd_download(struct cli *c, char *file) {
+	if (u_assert(c != NULL) ||
+	    u_assert(file != NULL)) {
+		return CLI_CMD_PROGRAM_FILE_FAILED;
+	}
+
+	cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
+
+	struct sffs_file f;
+	sffs_open_id(&flash_fs, &f, 1000, SFFS_OVERWRITE);
+
+	struct xmodem x;
+	xmodem_init(&x, c->console);
+	xmodem_set_recv_callback(&x, cli_xmodem_recv_to_file_cb, (void *)&f);
+	int32_t res = xmodem_recv(&x);
+
+	if (res == XMODEM_RECV_EOT) {
+		/* Clear the terminal after xmodem transfer. */
+		cli_print(c, "                   \r\n");
+		char s[40];
+		snprintf(s, sizeof(s), "%u bytes downloaded.\r\n", (unsigned int)(x.bytes_transferred));
+		cli_print(c, s);
+	}
+	if (res == XMODEM_RECV_CANCEL) {
+		cli_print(c, "XMODEM transfer cancelled.\r\n");
+	}
+	if (res == XMODEM_RECV_TIMEOUT) {
+		cli_print(c, "XMODEM transfer timeout.\r\n");
+	}
+	xmodem_free(&x);
+	sffs_close(&f);
+
+	return CLI_CMD_DOWNLOAD_OK;
+}
+
+
+int32_t cli_cmd_erase(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_ERASE_FAILED;
+	}
+
+	fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
+	fw_image_erase(&main_fw);
+	cli_print(c, "\r\n");
+
+	return CLI_CMD_ERASE_OK;
+}
+
+
+static void hex_to_string32(char *s, uint32_t n) {
+	const char a[] = "0123456789abcdef";
+	for (uint32_t i = 0; i < 8; i++) {
+		s[i] = a[(n >> ((7 - i) * 4)) & 0xf];
+	}
+	s[8] = '\0';
+}
+
+
+static void hex_to_string8(char *s, uint8_t n) {
+	const char a[] = "0123456789abcdef";
+	s[0] = a[n >> 4];
+	s[1] = a[n & 0xf];
+	s[2] = '\0';
+}
+
+
+int32_t cli_cmd_dump(struct cli *c, uint32_t addr, uint32_t len) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_DUMP_FAILED;
+	}
+
+	for (uint32_t i = 0; i < len; i++) {
+		/* Print line header */
+		if ((i % 16) == 0) {
+			char s[9];
+			hex_to_string32(s, addr + i);
+			cli_print(c, "0x");
+			cli_print(c, s);
+			cli_print(c, ": ");
+		}
+
+		uint8_t byte = *((uint8_t *)(addr + i));
+		char bs[3];
+		hex_to_string8(bs, byte);
+		cli_print(c, bs);
+		cli_print(c, " ");
+
+		if ((i % 16) == 7) {
+			cli_print(c, " ");
+		}
+		if ((i % 16) == 15) {
+			cli_print(c, "\r\n");
+		}
+	}
+
+	return CLI_CMD_DUMP_OK;
+}
+
+
+int32_t cli_cmd_verify_flash(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_VERIFY_FLASH_FAILED;
+	}
+
+	fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
+	fw_image_verify(&main_fw);
+
+	return CLI_CMD_VERIFY_FLASH_OK;
+}
+
+
+int32_t cli_cmd_authenticate_flash(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_AUTHENTICATE_FLASH_FAILED;
+	}
+
+	fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
+	fw_image_authenticate(&main_fw);
+
+	return CLI_CMD_AUTHENTICATE_FLASH_OK;
+}
+
+

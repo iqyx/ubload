@@ -262,7 +262,9 @@ int32_t fw_image_parse_section(struct fw_image *fw, uint8_t **section_base, stru
 			section->type = FW_IMAGE_SECTION_TYPE_ED25519;
 			break;
 		default:
-			return FW_IMAGE_PARSE_SECTION_OK;
+			section->type = FW_IMAGE_SECTION_TYPE_UNKNOWN;
+			u_log(system_log, LOG_TYPE_WARN, "fw_image: unknown section magic 0x%08x", magic);
+			break;
 	}
 
 	uint32_t len = 0;
@@ -324,8 +326,7 @@ int32_t fw_image_parse(struct fw_image *fw) {
 				u_log(system_log, LOG_TYPE_INFO, "fw_image: firmware vector table found at 0x%08x", subsection.data);
 				break;
 			default:
-				parse_ok = false;
-				goto end;
+				/* Do nothing for unknown (but otherwise valid) sections. */
 				break;
 		}
 
@@ -354,8 +355,7 @@ int32_t fw_image_parse(struct fw_image *fw) {
 				fw->signature = subsection.data;
 				break;
 			default:
-				parse_ok = false;
-				goto end;
+				/* Do nothing for unknown (but otherwise valid) sections. */
 				break;
 		}
 	}

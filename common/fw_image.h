@@ -35,6 +35,7 @@
 #define FW_IMAGE_SECTION_MAGIC_FIRMWARE 0x40b80c0f
 #define FW_IMAGE_SECTION_MAGIC_SHA512 0xb6eb9721
 #define FW_IMAGE_SECTION_MAGIC_ED25519 0x9d6b1a99
+#define FW_IMAGE_SECTION_MAGIC_FP 0x5bf0aa39
 
 /**
  * Type of hash digest available in the firmware image.
@@ -47,6 +48,7 @@ enum fw_image_section_hash {
  * Types of firmware sections (top and subsections).
  */
 enum fw_image_section_type {
+	FW_IMAGE_SECTION_TYPE_UNKNOWN,
 	FW_IMAGE_SECTION_TYPE_VERIFIED,
 	FW_IMAGE_SECTION_TYPE_VERIFICATION,
 	FW_IMAGE_SECTION_TYPE_DUMMY,

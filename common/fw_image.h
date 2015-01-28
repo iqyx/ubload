@@ -55,6 +55,7 @@ enum fw_image_section_type {
 	FW_IMAGE_SECTION_TYPE_FIRMWARE,
 	FW_IMAGE_SECTION_TYPE_SHA512,
 	FW_IMAGE_SECTION_TYPE_ED25519,
+	FW_IMAGE_SECTION_TYPE_FP,
 };
 
 /**
@@ -135,6 +136,13 @@ struct fw_image {
 	bool have_signature;
 	uint8_t *signature;
 
+	/**
+	 * If a public key fingerprint section is found, use this information
+	 * for faster public key selection.
+	 */
+	bool have_pubkey_fp;
+	uint8_t *pubkey_fp;
+	uint32_t pubkey_fp_len;
 };
 
 

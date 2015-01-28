@@ -133,25 +133,9 @@ int32_t pubkey_storage_verify_slot(const struct pubkey_storage_slot *slot);
  *                                        was retrieved successfully or
  *         PUBKEY_STORAGE_GET_SLOT_KEY_FAILED otherwise.
  */
-int32_t pubkey_storage_get_slot_key(struct pubkey_storage_slot *slot, uint8_t *key, uint8_t size);
+int32_t pubkey_storage_get_slot_key(const struct pubkey_storage_slot *slot, uint8_t *key, uint8_t size);
 #define PUBKEY_STORAGE_GET_SLOT_KEY_OK 0
 #define PUBKEY_STORAGE_GET_SLOT_KEY_FAILED -1
-
-/**
- * @brief Compare public key fingerprint saved in the slot with a
- *        fingerprint provided as an argument.
- *
- * @param slot Pubkey slot with fingerprint to compare.
- * @param fp A fingerprint of PUBKEY_STORAGE_SLOT_FP_SIZE size to compare.
- *
- * @return PUBKEY_STORAGE_COMPARE_FP_MATCH if both fingerprints match,
- *         PUBKEY_STORAGE_COMPARE_FP_NO_MATCH if the fingerprints do not match or
- *         PUBKEY_STORAGE_COMPARE_FP_FAILED otherwise.
- */
-int32_t pubkey_storage_compare_fp(struct pubkey_storage_slot *slot, uint8_t *fp);
-#define PUBKEY_STORAGE_COMPARE_FP_MATCH 1
-#define PUBKEY_STORAGE_COMPARE_FP_NO_MATCH 0
-#define PUBKEY_STORAGE_COMPARE_FP_FAILED -1
 
 int32_t pubkey_storage_set_salt(const uint8_t *salt, uint32_t size);
 #define PUBKEY_STORAGE_SET_SALT_OK 0
@@ -162,5 +146,8 @@ int32_t pubkey_storage_lock_slot(const struct pubkey_storage_slot *slot);
 #define PUBKEY_STORAGE_LOCK_SLOT_OK 0
 #define PUBKEY_STORAGE_LOCK_SLOT_FAILED -1
 
+int32_t pubkey_storage_get_slot_key_by_fp(uint8_t *fp, uint8_t *key, uint8_t size);
+#define PUBKEY_STORAGE_GET_SLOT_KEY_BY_FP_OK 0
+#define PUBKEY_STORAGE_GET_SLOT_KEY_BY_FP_FAILED -1
 
 #endif

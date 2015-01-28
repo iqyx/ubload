@@ -177,7 +177,7 @@ int32_t pubkey_storage_verify_slot(const struct pubkey_storage_slot *slot) {
 }
 
 
-int32_t pubkey_storage_get_slot_key(struct pubkey_storage_slot *slot, uint8_t *key, uint8_t size) {
+int32_t pubkey_storage_get_slot_key(const struct pubkey_storage_slot *slot, uint8_t *key, uint8_t size) {
 	if (u_assert(slot != NULL) ||
 	    u_assert(key != NULL) ||
 	    u_assert(size <= PUBKEY_STORAGE_SLOT_SIZE)) {
@@ -248,4 +248,22 @@ int32_t pubkey_storage_lock_slot(const struct pubkey_storage_slot *slot) {
 	flash_lock();
 
 	return PUBKEY_STORAGE_LOCK_SLOT_OK;
+}
+
+
+int32_t pubkey_storage_get_slot_key_by_fp(uint8_t *fp, uint8_t *key, uint8_t size) {
+	if (u_assert(fp != NULL) ||
+	    u_assert(key != NULL)) {
+		return PUBKEY_STORAGE_GET_SLOT_KEY_BY_FP_FAILED;
+	}
+
+	for (uint32_t i = 0; i < PUBKEY_STORAGE_SLOT_COUNT; i++) {
+		if (!memcmp(pubkey_storage_slots[i].pubkey_fp, fp, PUBKEY_STORAGE_SLOT_FP_SIZE)) {
+			pubkey_storage_get_slot_key(&(pubkey_storage_slots[i]), key, size);
+			return PUBKEY_STORAGE_GET_SLOT_KEY_BY_FP_OK;
+		}
+	}
+
+	/* No key matched. */
+	return PUBKEY_STORAGE_GET_SLOT_KEY_BY_FP_FAILED;
 }

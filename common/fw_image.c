@@ -36,16 +36,7 @@
 #include "cli.h"
 #include "sha512.h"
 #include "edsign.h"
-
-const uint8_t *test_priv_key =  "\xb1\x8e\x1d\x00\x45\x99\x5e\xc3\xd0\x10\xc3\x87\xcc\xfe\xb9\x84\xd7\x83\xaf\x8f\xbb\x0f\x40\xfa\x7d\xb1\x26\xd8\x89\xf6\xda\xdd";
-const uint8_t *test_pub_key =   "\x77\xf4\x8b\x59\xca\xed\xa7\x77\x51\xed\x13\x8b\x0e\xc6\x67\xff\x50\xf8\x76\x8c\x25\xd4\x83\x09\xa8\xf3\x86\xa2\xba\xd1\x87\xfb";
-const uint8_t *test_message =   "\x91\x6c\x7d\x1d\x26\x8f\xc0\xe7\x7c\x1b\xef\x23\x84\x32\x57\x3c\x39\xbe\x57\x7b\xbe\xa0\x99\x89\x36\xad\xd2\xb5\x0a\x65\x31\x71"
-                                "\xce\x18\xa5\x42\xb0\xb7\xf9\x6c\x16\x91\xa3\xbe\x60\x31\x52\x28\x94\xa8\x63\x41\x83\xed\xa3\x87\x98\xa0\xc5\xd5\xd7\x9f\xbd\x01"
-                                "\xdd\x04\xa8\x64\x6d\x71\x87\x3b\x77\xb2\x21\x99\x8a\x81\x92\x2d\x81\x05\xf8\x92\x31\x63\x69\xd5\x22\x4c\x99\x83\x37\x2d\x23\x13"
-                                "\xc6\xb1\xf4\x55\x6e\xa2\x6b\xa4\x9d\x46\xe8\xb5\x61\xe0\xfc\x76\x63\x3a\xc9\x76\x6e\x68\xe2\x1f\xba\x7e\xdc\xa9\x3c\x4c\x74\x60"
-                                "\x37\x6d\x7f\x3a\xc2\x2f\xf3\x72\xc1\x8f\x61\x3f\x2a\xe2\xe8\x56\xaf\x40";
-const uint8_t *test_signature = "\x6b\xd7\x10\xa3\x68\xc1\x24\x99\x23\xfc\x7a\x16\x10\x74\x74\x03\x04\x0f\x0c\xc3\x08\x15\xa0\x0f\x9f\xf5\x48\xa8\x96\xbb\xda\x0b"
-                                "\x4e\xb2\xca\x19\xeb\xcf\x91\x7f\x0f\x34\x20\x0a\x9e\xdb\xad\x39\x01\xb6\x4a\xb0\x9c\xc5\xef\x7b\x9b\xcc\x3c\x40\xc0\xff\x75\x09";
+#include "pubkey_storage.h"
 
 
 int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint8_t sectors) {
@@ -57,11 +48,6 @@ int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint
 	fw->base = base;
 	fw->base_sector = base_sector;
 	fw->sectors = sectors;
-	fw->parsed = false;
-	fw->verified = false;
-	fw->authenticated = false;
-	fw->offset = 0;
-	fw->progress_callback = NULL;
 
 	return FW_IMAGE_INIT_OK;
 }
@@ -261,6 +247,9 @@ int32_t fw_image_parse_section(struct fw_image *fw, uint8_t **section_base, stru
 		case FW_IMAGE_SECTION_MAGIC_ED25519:
 			section->type = FW_IMAGE_SECTION_TYPE_ED25519;
 			break;
+		case FW_IMAGE_SECTION_MAGIC_FP:
+			section->type = FW_IMAGE_SECTION_TYPE_FP;
+			break;
 		default:
 			section->type = FW_IMAGE_SECTION_TYPE_UNKNOWN;
 			u_log(system_log, LOG_TYPE_WARN, "fw_image: unknown section magic 0x%08x", magic);
@@ -346,13 +335,28 @@ int32_t fw_image_parse(struct fw_image *fw) {
 			case FW_IMAGE_SECTION_TYPE_DUMMY:
 				break;
 			case FW_IMAGE_SECTION_TYPE_SHA512:
-				fw->have_hash = true;
-				fw->hash = subsection.data;
-				fw->hash_type = FW_IMAGE_SECTION_HASH_SHA512;
+				/* SHA512 hash must be exactly 64 bytes long. */
+				if (subsection.len == 64) {
+					fw->have_hash = true;
+					fw->hash = subsection.data;
+					fw->hash_type = FW_IMAGE_SECTION_HASH_SHA512;
+				}
 				break;
 			case FW_IMAGE_SECTION_TYPE_ED25519:
-				fw->have_signature = true;
-				fw->signature = subsection.data;
+				/* Ed25519 signature must be exactly 64 bytes long,
+				 * it is invalid itherwise. */
+				if (subsection.len == 64) {
+					fw->have_signature = true;
+					fw->signature = subsection.data;
+				}
+				break;
+			case FW_IMAGE_SECTION_TYPE_FP:
+				/* Public key fingerprint must be at least 4 bytes long */
+				if (subsection.len >= 4) {
+					fw->have_pubkey_fp = true;
+					fw->pubkey_fp = subsection.data;
+					fw->pubkey_fp_len = subsection.len;
+				}
 				break;
 			default:
 				/* Do nothing for unknown (but otherwise valid) sections. */
@@ -431,11 +435,35 @@ int32_t fw_image_authenticate(struct fw_image *fw) {
 		return FW_IMAGE_AUTHENTICATE_FAILED;
 	}
 
+	if (fw->have_pubkey_fp == false) {
+		u_log(system_log, LOG_TYPE_CRIT, "fw_image: no public key fingerprint found, cannot match any key");
+		fw->authenticated = false;
+		return FW_IMAGE_AUTHENTICATE_FAILED;
+	}
+
 	u_assert(fw->signature != NULL);
+	u_assert(fw->pubkey_fp != NULL);
 
 	u_log(system_log, LOG_TYPE_INFO, "fw_image: authenticating loaded firmware...");
+
+	/* Find suitable public key for authentication. */
+	/* TODO: handle fingerprint conflict. */
+	/* TODO: check if the key is valid for this type of signature. */
+	uint8_t pubkey[PUBKEY_STORAGE_SLOT_SIZE];
+	if (pubkey_storage_get_slot_key_by_fp(fw->pubkey_fp, pubkey, sizeof(pubkey)) != PUBKEY_STORAGE_GET_SLOT_KEY_BY_FP_OK) {
+		u_log(system_log, LOG_TYPE_CRIT,
+			"fw_image: no matching public key found for fingerprint 0x%02x%02x%02x%02x",
+			fw->pubkey_fp[0],
+			fw->pubkey_fp[1],
+			fw->pubkey_fp[2],
+			fw->pubkey_fp[3]
+		);
+		fw->authenticated = false;
+		return FW_IMAGE_AUTHENTICATE_FAILED;
+	}
+
 	/* TODO: determine hash size by its type */
-	if (edsign_verify(fw->signature, test_pub_key, fw->hash, 64)) {
+	if (edsign_verify(fw->signature, pubkey, fw->hash, 64)) {
 		u_log(system_log, LOG_TYPE_INFO, "fw_image: firmware authentication OK");
 		fw->authenticated = true;
 		return FW_IMAGE_AUTHENTICATE_OK;

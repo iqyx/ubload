@@ -77,14 +77,6 @@ int32_t cli_print(struct cli *c, char *s);
 #define CLI_PRINT_OK 0
 #define CLI_PRINT_FAILED -1
 
-int32_t cli_print_help_command(struct cli *c, char *cmd, char *help);
-#define CLI_PRINT_HELP_COMMAND_OK 0
-#define CLI_PRINT_HELP_COMMAND_FAILED -1
-
-int32_t cli_cmd_help(struct cli *c);
-#define CLI_CMD_HELP_OK 0
-#define CLI_CMD_HELP_FAILED -1
-
 int32_t cli_print_banner(struct cli *c);
 #define CLI_PRINT_BANNER_OK 0
 #define CLI_PRINT_BANNER_FAILED -1
@@ -92,46 +84,6 @@ int32_t cli_print_banner(struct cli *c);
 int32_t cli_print_key(struct cli *c, const uint8_t *key, uint32_t size);
 #define CLI_PRINT_KEY_OK 0
 #define CLI_PRINT_KEY_FAILED -1
-
-int32_t cli_cmd_pubkey_print(struct cli *c);
-#define CLI_CMD_PUBKEY_PRINT_OK 0
-#define CLI_CMD_PUBKEY_PRINT_FAILED -1
-
-int32_t cli_cmd_pubkey_add(struct cli *c);
-#define CLI_CMD_PUBKEY_ADD_OK 0
-#define CLI_CMD_PUBKEY_ADD_FAILED -1
-
-int32_t cli_cmd_pubkey_lock(struct cli *c);
-#define CLI_CMD_PUBKEY_LOCK_OK 0
-#define CLI_CMD_PUBKEY_LOCK_FAILED -1
-
-int32_t cli_cmd_program_xmodem(struct cli *c);
-#define CLI_CMD_PROGRAM_XMODEM_OK 0
-#define CLI_CMD_PROGRAM_XMODEM_FAILED -1
-
-int32_t cli_cmd_program_file(struct cli *c, char *file);
-#define CLI_CMD_PROGRAM_FILE_OK 0
-#define CLI_CMD_PROGRAM_FILE_FAILED -1
-
-int32_t cli_cmd_download(struct cli *c, char *file);
-#define CLI_CMD_DOWNLOAD_OK 0
-#define CLI_CMD_DOWNLOAD_FAILED -1
-
-int32_t cli_cmd_erase(struct cli *c);
-#define CLI_CMD_ERASE_OK 0
-#define CLI_CMD_ERASE_FAILED -1
-
-int32_t cli_cmd_dump(struct cli *c, uint32_t addr, uint32_t len);
-#define CLI_CMD_DUMP_OK 0
-#define CLI_CMD_DUMP_FAILED -1
-
-int32_t cli_cmd_verify_flash(struct cli *c);
-#define CLI_CMD_VERIFY_FLASH_OK 0
-#define CLI_CMD_VERIFY_FLASH_FAILED -1
-
-int32_t cli_cmd_authenticate_flash(struct cli *c);
-#define CLI_CMD_AUTHENTICATE_FLASH_OK 0
-#define CLI_CMD_AUTHENTICATE_FLASH_FAILED -1
 
 
 #endif

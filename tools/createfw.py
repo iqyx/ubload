@@ -12,6 +12,7 @@ class section_magic:
 	firmware = 0x40b80c0f
 	sha512 = 0xb6eb9721
 	ed25519 = 0x9d6b1a99
+	fp = 0x5bf0aa39
 
 section_names = {
 	section_magic.verification: "verification",
@@ -20,6 +21,7 @@ section_names = {
 	section_magic.firmware: "firmware",
 	section_magic.sha512: "sha512 hash",
 	section_magic.ed25519: "ed25519 signature",
+	section_magic.fp: "pubkey fingerprint",
 }
 
 def build_section(section_magic, data):
@@ -172,6 +174,11 @@ if args.signfile:
 
 	fw_signature = ed25519.signature(fw_hash, priv_key, pub_key)
 	fw_verification += build_section(section_magic.ed25519, fw_signature)
+
+	# Append pubkey fingerprint.
+	pub_key_fp = hashlib.sha512(pub_key).digest()
+	pub_key_fp = pub_key_fp[:4]
+	fw_verification += build_section(section_magic.fp, pub_key_fp)
 
 
 # This variable contains full firmware image with all required parts

@@ -39,11 +39,11 @@ int32_t cli_cmd_pubkey_print(struct cli *c);
 #define CLI_CMD_PUBKEY_PRINT_OK 0
 #define CLI_CMD_PUBKEY_PRINT_FAILED -1
 
-int32_t cli_cmd_pubkey_add(struct cli *c);
+int32_t cli_cmd_pubkey_add(struct cli *c, const char *pubkey);
 #define CLI_CMD_PUBKEY_ADD_OK 0
 #define CLI_CMD_PUBKEY_ADD_FAILED -1
 
-int32_t cli_cmd_pubkey_lock(struct cli *c);
+int32_t cli_cmd_pubkey_lock(struct cli *c, uint32_t slot_num);
 #define CLI_CMD_PUBKEY_LOCK_OK 0
 #define CLI_CMD_PUBKEY_LOCK_FAILED -1
 

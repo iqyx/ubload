@@ -185,24 +185,93 @@ int32_t cli_cmd_pubkey_print(struct cli *c) {
 }
 
 
-int32_t cli_cmd_pubkey_add(struct cli *c) {
-	if (u_assert(c != NULL)) {
+int32_t cli_cmd_pubkey_add(struct cli *c, const char *pubkey) {
+	if (u_assert(c != NULL) ||
+	    u_assert(pubkey != NULL)) {
 		return CLI_CMD_PUBKEY_ADD_FAILED;
 	}
 
-	pubkey_storage_set_salt((uint8_t *)"aaa", 3);
-	pubkey_storage_set_slot_key(&(pubkey_storage_slots[0]), (uint8_t *)"aaaaaaaabbbbbbbbccccccccdddddddd", 32);
+	/* TODO: parse pubkey here */
+	uint8_t key[PUBKEY_STORAGE_SLOT_SIZE];
+	memset(key, 0, sizeof(key));
+
+	/* Find first empty slot. */
+	uint32_t slot_num = UINT32_MAX;
+	for (uint32_t i = 0; i < PUBKEY_STORAGE_SLOT_COUNT; i++) {
+		if (pubkey_storage_check_if_slot_empty(&(pubkey_storage_slots[i])) == PUBKEY_STORAGE_CHECK_IF_SLOT_EMPTY_EMPTY) {
+			slot_num = i;
+			break;
+		}
+	}
+	if (UINT32_MAX == slot_num) {
+		cli_print(c, "No empty slot found - new key cannot be added.\r\n");
+		return CLI_CMD_PUBKEY_ADD_FAILED;
+	} else {
+		cli_print(c, "You are going to write a key ");
+		cli_print_key(c, key, sizeof(key));
+		char s[20];
+		snprintf(s, sizeof(s), " to slot %u.\r\n", (unsigned int)(slot_num + 1));
+		cli_print(c, s);
+
+		if (cli_confirm(c) == CLI_CONFIRM_YES) {
+			cli_print(c, "\r\n");
+			/* TODO: add command to set salt */
+			u_log(system_log, LOG_TYPE_INFO, "pubkey_storage: setting new key for slot %u", slot_num + 1);
+			pubkey_storage_set_salt((uint8_t *)"aaa", 3);
+			pubkey_storage_set_slot_key(&(pubkey_storage_slots[slot_num]), key, PUBKEY_STORAGE_SLOT_SIZE);
+			return CLI_CMD_PUBKEY_ADD_OK;
+		} else {
+			cli_print(c, "\r\n");
+			return CLI_CMD_PUBKEY_ADD_FAILED;
+		}
+	}
 
 	return CLI_CMD_PUBKEY_ADD_OK;
 }
 
 
-int32_t cli_cmd_pubkey_lock(struct cli *c) {
+int32_t cli_cmd_pubkey_lock(struct cli *c, uint32_t slot_num) {
 	if (u_assert(c != NULL)) {
 		return CLI_CMD_PUBKEY_LOCK_FAILED;
 	}
 
-	pubkey_storage_lock_slot(&(pubkey_storage_slots[0]));
+	if ((slot_num < 1 || slot_num > PUBKEY_STORAGE_SLOT_COUNT) && (slot_num != UINT32_MAX)) {
+		cli_print(c, "Invalid slot number.\r\n");
+		return CLI_CMD_PUBKEY_LOCK_FAILED;
+	}
+
+	if (UINT32_MAX == slot_num) {
+		cli_print(c, "You yre going to lock all empty slots.\r\n");
+		if (cli_confirm(c) == CLI_CONFIRM_YES) {
+			cli_print(c, "\r\n");
+			for (uint32_t i = 0; i < PUBKEY_STORAGE_SLOT_COUNT; i++) {
+				if (pubkey_storage_check_if_slot_empty(&(pubkey_storage_slots[i])) == PUBKEY_STORAGE_CHECK_IF_SLOT_EMPTY_EMPTY) {
+					u_log(system_log, LOG_TYPE_INFO, "pubkey_storage: locking slot %u", i + 1);
+					pubkey_storage_lock_slot(&(pubkey_storage_slots[i]));
+				}
+			}
+			return CLI_CMD_PUBKEY_LOCK_OK;
+		} else {
+			cli_print(c, "\r\n");
+			return CLI_CMD_PUBKEY_LOCK_FAILED;
+		}
+
+	} else {
+		cli_print(c, "You yre going to lock slot ");
+		char s[20];
+		snprintf(s, sizeof(s), "%u.\r\n", (unsigned int)(slot_num));
+		cli_print(c, s);
+		if (cli_confirm(c) == CLI_CONFIRM_YES) {
+			cli_print(c, "\r\n");
+			/* Slots are indexed from 0 but displayed from 1. */
+			u_log(system_log, LOG_TYPE_INFO, "pubkey_storage: locking slot %u", slot_num);
+			pubkey_storage_lock_slot(&(pubkey_storage_slots[slot_num - 1]));
+			return CLI_CMD_PUBKEY_LOCK_OK;
+		} else {
+			cli_print(c, "\r\n");
+			return CLI_CMD_PUBKEY_LOCK_FAILED;
+		}
+	}
 
 	return CLI_CMD_PUBKEY_LOCK_OK;
 }

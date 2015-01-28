@@ -340,18 +340,34 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(argv[0], "pubkey print")) {
-		cli_cmd_pubkey_print(c);
-		return CLI_EXECUTE_OK;
-	}
-
-	if (!strcmp(argv[0], "pubkey add")) {
-		cli_cmd_pubkey_add(c);
-		return CLI_EXECUTE_OK;
-	}
-
-	if (!strcmp(argv[0], "pubkey lock")) {
-		cli_cmd_pubkey_lock(c);
+	if (!strcmp(argv[0], "pubkey")) {
+		if (argc <= 1) {
+			cli_print(c, "Required argument is missing.\r\n");
+			return CLI_EXECUTE_OK;
+		} else {
+			if (!strcmp(argv[1], "print")) {
+				cli_cmd_pubkey_print(c);
+			}
+			if (!strcmp(argv[1], "add")) {
+				if (argc <= 2) {
+					cli_print(c, "Key is missing.\r\n");
+				} else {
+					cli_cmd_pubkey_add(c, argv[2]);
+				}
+			}
+			if (!strcmp(argv[1], "lock")) {
+				if (argc <= 2) {
+					cli_print(c, "Slot number is missing.\r\n");
+				} else {
+					if (!strcmp(argv[2], "all")) {
+						cli_cmd_pubkey_lock(c, UINT32_MAX);
+					} else {
+						uint32_t slot_num = atoi(argv[2]);
+						cli_cmd_pubkey_lock(c, slot_num);
+					}
+				}
+			}
+		}
 		return CLI_EXECUTE_OK;
 	}
 

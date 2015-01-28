@@ -75,9 +75,9 @@ int32_t cli_cmd_authenticate_flash(struct cli *c);
 #define CLI_CMD_AUTHENTICATE_FLASH_OK 0
 #define CLI_CMD_AUTHENTICATE_FLASH_FAILED -1
 
-
-
-
+int32_t cli_cmd_log_print(struct cli *c);
+#define CLI_CMD_LOG_PRINT_OK 0
+#define CLI_CMD_LOG_PRINT_FAILED -1
 
 #endif
 

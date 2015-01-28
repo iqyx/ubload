@@ -371,6 +371,17 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 		return CLI_EXECUTE_OK;
 	}
 
+	if (!strcmp(argv[0], "log")) {
+		if (argc == 1) {
+			cli_print(c, "Required argument is missing.\r\n");
+		} else {
+			if (!strcmp(argv[1], "print")) {
+				cli_cmd_log_print(c);
+			}
+		}
+		return CLI_EXECUTE_OK;
+	}
+
 	cli_print(c, "Unknown command '");
 	cli_print(c, argv[0]);
 	cli_print(c, "'\r\n");

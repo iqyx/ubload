@@ -409,3 +409,13 @@ int32_t cli_cmd_authenticate_flash(struct cli *c) {
 	return CLI_CMD_AUTHENTICATE_FLASH_OK;
 }
 
+
+int32_t cli_cmd_log_print(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_LOG_PRINT_FAILED;
+	}
+
+	log_cbuffer_print(system_log);
+
+	return CLI_CMD_LOG_PRINT_OK;
+}

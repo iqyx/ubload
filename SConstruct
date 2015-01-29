@@ -139,14 +139,14 @@ print cformat("\ttoolchain = %s" % env["TOOLCHAIN"])
 print ""
 
 # link the whole thing
-elf = env.Program(source = objs, target = "umeshfw_%s.elf" % env["PLATFORM"], LIBS = [env["LIBOCM3"], "c", "gcc", "nosys"])
+elf = env.Program(source = objs, target = "ubload_%s.elf" % env["PLATFORM"], LIBS = [env["LIBOCM3"], "c", "gcc", "nosys"])
 
 env.Append(BUILDERS = {"MakeVer": env.Builder(action = make_ver)})
 version = env.MakeVer(target = "platforms/%s/version.h" % env["PLATFORM"], source = None)
 Depends(elf, version)
 
 # convert to raw binary
-rawbin = env.Command("umeshfw_%s.bin" % env["PLATFORM"], elf, "$OBJCOPY -O binary $SOURCE $TARGET")
+rawbin = env.Command("ubload_%s.bin" % env["PLATFORM"], elf, "$OBJCOPY -O binary $SOURCE $TARGET")
 
 elfsize = env.Command(source = elf, target = "elfsize", action = "$SIZE $SOURCE")
 

@@ -227,41 +227,13 @@ int32_t fw_image_parse_section(struct fw_image *fw, uint8_t **section_base, stru
 	magic = magic << 8 | *(*section_base + 1);
 	magic = magic << 8 | *(*section_base + 2);
 	magic = magic << 8 | *(*section_base + 3);
-
-	switch (magic) {
-		case FW_IMAGE_SECTION_MAGIC_VERIFIED:
-			section->type = FW_IMAGE_SECTION_TYPE_VERIFIED;
-			break;
-		case FW_IMAGE_SECTION_MAGIC_VERIFICATION:
-			section->type = FW_IMAGE_SECTION_TYPE_VERIFICATION;
-			break;
-		case FW_IMAGE_SECTION_MAGIC_DUMMY:
-			section->type = FW_IMAGE_SECTION_TYPE_DUMMY;
-			break;
-		case FW_IMAGE_SECTION_MAGIC_FIRMWARE:
-			section->type = FW_IMAGE_SECTION_TYPE_FIRMWARE;
-			break;
-		case FW_IMAGE_SECTION_MAGIC_SHA512:
-			section->type = FW_IMAGE_SECTION_TYPE_SHA512;
-			break;
-		case FW_IMAGE_SECTION_MAGIC_ED25519:
-			section->type = FW_IMAGE_SECTION_TYPE_ED25519;
-			break;
-		case FW_IMAGE_SECTION_MAGIC_FP:
-			section->type = FW_IMAGE_SECTION_TYPE_FP;
-			break;
-		default:
-			section->type = FW_IMAGE_SECTION_TYPE_UNKNOWN;
-			u_log(system_log, LOG_TYPE_WARN, "fw_image: unknown section magic 0x%08x", magic);
-			break;
-	}
+	section->magic = magic;
 
 	uint32_t len = 0;
 	len = len << 8 | *(*section_base + 4);
 	len = len << 8 | *(*section_base + 5);
 	len = len << 8 | *(*section_base + 6);
 	len = len << 8 | *(*section_base + 7);
-
 	/* TODO: check if the whole section fits inside the flash space */
 	section->len = len;
 	section->data = *section_base + 8;
@@ -290,8 +262,8 @@ int32_t fw_image_parse(struct fw_image *fw) {
 		parse_ok = false;
 		goto end;
 	}
-	if ((fw->verified_section.type != FW_IMAGE_SECTION_TYPE_VERIFIED) ||
-	    (fw->verification_section.type != FW_IMAGE_SECTION_TYPE_VERIFICATION)) {
+	if ((fw->verified_section.magic != FW_IMAGE_SECTION_MAGIC_VERIFIED) ||
+	    (fw->verification_section.magic != FW_IMAGE_SECTION_MAGIC_VERIFICATION)) {
 		parse_ok = false;
 		goto end;
 	}
@@ -306,10 +278,10 @@ int32_t fw_image_parse(struct fw_image *fw) {
 			parse_ok = false;
 			goto end;
 		}
-		switch (subsection.type) {
-			case FW_IMAGE_SECTION_TYPE_DUMMY:
+		switch (subsection.magic) {
+			case FW_IMAGE_SECTION_MAGIC_DUMMY:
 				break;
-			case FW_IMAGE_SECTION_TYPE_FIRMWARE:
+			case FW_IMAGE_SECTION_MAGIC_FIRMWARE:
 				fw->have_firmware = true;
 				fw->offset = subsection.data - fw->base;
 				u_log(system_log, LOG_TYPE_INFO, "fw_image: firmware vector table found at 0x%08x", subsection.data);
@@ -331,10 +303,10 @@ int32_t fw_image_parse(struct fw_image *fw) {
 			parse_ok = false;
 			goto end;
 		}
-		switch (subsection.type) {
-			case FW_IMAGE_SECTION_TYPE_DUMMY:
+		switch (subsection.magic) {
+			case FW_IMAGE_SECTION_MAGIC_DUMMY:
 				break;
-			case FW_IMAGE_SECTION_TYPE_SHA512:
+			case FW_IMAGE_SECTION_MAGIC_SHA512:
 				/* SHA512 hash must be exactly 64 bytes long. */
 				if (subsection.len == 64) {
 					fw->have_hash = true;
@@ -342,7 +314,7 @@ int32_t fw_image_parse(struct fw_image *fw) {
 					fw->hash_type = FW_IMAGE_SECTION_HASH_SHA512;
 				}
 				break;
-			case FW_IMAGE_SECTION_TYPE_ED25519:
+			case FW_IMAGE_SECTION_MAGIC_ED25519:
 				/* Ed25519 signature must be exactly 64 bytes long,
 				 * it is invalid itherwise. */
 				if (subsection.len == 64) {
@@ -350,7 +322,7 @@ int32_t fw_image_parse(struct fw_image *fw) {
 					fw->signature = subsection.data;
 				}
 				break;
-			case FW_IMAGE_SECTION_TYPE_FP:
+			case FW_IMAGE_SECTION_MAGIC_FP:
 				/* Public key fingerprint must be at least 4 bytes long */
 				if (subsection.len >= 4) {
 					fw->have_pubkey_fp = true;

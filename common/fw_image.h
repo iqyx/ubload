@@ -45,26 +45,12 @@ enum fw_image_section_hash {
 };
 
 /**
- * Types of firmware sections (top and subsections).
- */
-enum fw_image_section_type {
-	FW_IMAGE_SECTION_TYPE_UNKNOWN,
-	FW_IMAGE_SECTION_TYPE_VERIFIED,
-	FW_IMAGE_SECTION_TYPE_VERIFICATION,
-	FW_IMAGE_SECTION_TYPE_DUMMY,
-	FW_IMAGE_SECTION_TYPE_FIRMWARE,
-	FW_IMAGE_SECTION_TYPE_SHA512,
-	FW_IMAGE_SECTION_TYPE_ED25519,
-	FW_IMAGE_SECTION_TYPE_FP,
-};
-
-/**
  * Firmware image section specification. Every section contains a header with
  * section type (determined by the section magic number) with length of data part
  * and the actual section data.
  */
 struct fw_image_section {
-	enum fw_image_section_type type;
+	uint32_t magic;
 	uint32_t len;
 	uint8_t *data;
 };

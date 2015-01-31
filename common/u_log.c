@@ -83,47 +83,41 @@ static void system_log_print_handler(struct log_cbuffer *buf, uint32_t pos, void
 
 	struct cli *c = (struct cli *)ctx;
 
-	lineedit_escape_print(&(c->le), ESC_BOLD, 0);
+	cli_print(c, ESC_BOLD);
 	switch (header & 0x0f) {
 		case LOG_TYPE_NULL:
 			cli_print(c, "\r\n");
 			return;
 
 		case LOG_TYPE_INFO:
-			lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_BLUE);
-			cli_print(c, "INFO: ");
+			cli_print(c, ESC_COLOR_FG_BLUE "INFO: ");
 			break;
 
 		case LOG_TYPE_DEBUG:
-			lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_GREEN);
-			cli_print(c, "DEBUG: ");
+			cli_print(c, ESC_COLOR_FG_GREEN "DEBUG: ");
 			break;
 
 		case LOG_TYPE_WARN:
-			lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_YELLOW);
-			cli_print(c, "WARNING: ");
+			cli_print(c, ESC_COLOR_FG_YELLOW "WARNING: ");
 			break;
 
 		case LOG_TYPE_ERROR:
-			lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_MAGENTA);
-			cli_print(c, "ERROR: ");
+			cli_print(c, ESC_COLOR_FG_MAGENTA "ERROR: ");
 			break;
 
 		case LOG_TYPE_CRIT:
-			lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_RED);
-			cli_print(c, "CRITICAL: ");
+			cli_print(c, ESC_COLOR_FG_RED "CRITICAL: ");
 			break;
 
 		case LOG_TYPE_ASSERT:
-			lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_RED);
-			cli_print(c, "ASSERT: ");
+			cli_print(c, ESC_COLOR_FG_RED "ASSERT: ");
 			break;
 
 		default:
 			cli_print(c, "?: ");
 			break;
 	}
-	lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+	cli_print(c, ESC_DEFAULT);
 	cli_print(c, msg);
 	cli_print(c, "\r\n");
 }

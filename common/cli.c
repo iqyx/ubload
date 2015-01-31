@@ -53,15 +53,9 @@ static int32_t cli_print_handler(const char *s, void *ctx) {
 static int32_t cli_prompt_callback(struct lineedit *le, void *ctx) {
 	(void)ctx;
 
-	lineedit_escape_print(le, ESC_COLOR, LINEEDIT_FG_COLOR_YELLOW);
-	lineedit_escape_print(le, ESC_BOLD, 0);
-	le->print_handler("uBLoad(", le->print_handler_ctx);
-	lineedit_escape_print(le, ESC_DEFAULT, 0);
+	le->print_handler(ESC_COLOR_FG_YELLOW ESC_BOLD "uBLoad(" ESC_DEFAULT, le->print_handler_ctx);
 	le->print_handler(running_config.host, le->print_handler_ctx);
-	lineedit_escape_print(le, ESC_COLOR, LINEEDIT_FG_COLOR_YELLOW);
-	lineedit_escape_print(le, ESC_BOLD, 0);
-	le->print_handler(") > ", le->print_handler_ctx);
-	lineedit_escape_print(le, ESC_DEFAULT, 0);
+	le->print_handler(ESC_COLOR_FG_YELLOW ESC_BOLD ") > " ESC_DEFAULT, le->print_handler_ctx);
 
 	return 0;
 }
@@ -406,9 +400,7 @@ int32_t cli_print_banner(struct cli *c) {
 		return CLI_PRINT_BANNER_FAILED;
 	}
 
-	lineedit_escape_print(&(c->le), ESC_BOLD, 0);
-	lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_YELLOW);
-	cli_print(c, "\r\n### ");
+	cli_print(c, ESC_BOLD ESC_COLOR_FG_YELLOW "\r\n### ");
 	cli_print(c, PORT_BANNER);
 	cli_print(c, ", ");
 	cli_print(c, PORT_NAME);
@@ -416,8 +408,7 @@ int32_t cli_print_banner(struct cli *c) {
 	cli_print(c, UBLOAD_VERSION);
 	cli_print(c, ", build date ");
 	cli_print(c, UBLOAD_BUILD_DATE);
-	cli_print(c, "\r\n");
-	lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+	cli_print(c, "\r\n" ESC_DEFAULT);
 
 	return CLI_PRINT_BANNER_OK;
 }

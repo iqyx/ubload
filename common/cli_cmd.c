@@ -43,10 +43,9 @@ int32_t cli_print_help_command(struct cli *c, char *cmd, char *help) {
 		return CLI_PRINT_HELP_COMMAND_FAILED;
 	}
 
-	lineedit_escape_print(&(c->le), ESC_BOLD, 0);
+	cli_print(c, ESC_BOLD);
 	cli_print(c, cmd);
-	lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
-	cli_print(c, "\r\n");
+	cli_print(c, ESC_DEFAULT "\r\n");
 	cli_print(c, help);
 	cli_print(c, "\r\n");
 
@@ -79,20 +78,14 @@ int32_t cli_cmd_pubkey_print(struct cli *c) {
 		int32_t slot_state = pubkey_storage_check_if_slot_empty(&(pubkey_storage_slots[i]));
 		if (slot_state == PUBKEY_STORAGE_CHECK_IF_SLOT_EMPTY_USED) {
 			if (pubkey_storage_verify_slot(&(pubkey_storage_slots[i])) == PUBKEY_STORAGE_VERIFY_SLOT_OK) {
-				lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_GREEN);
-				cli_print(c, "OK ");
-				lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+				cli_print(c, ESC_COLOR_FG_GREEN "OK " ESC_DEFAULT);
 				cli_print_key(c, pubkey_storage_slots[i].pubkey, PUBKEY_STORAGE_SLOT_SIZE);
 			} else {
-				lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_RED);
-				cli_print(c, "invalid");
-				lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+				cli_print(c, ESC_COLOR_FG_RED "invalid" ESC_DEFAULT);
 			}
 
 		} else if (slot_state == PUBKEY_STORAGE_CHECK_IF_SLOT_EMPTY_LOCKED) {
-			lineedit_escape_print(&(c->le), ESC_COLOR, LINEEDIT_FG_COLOR_RED);
-			cli_print(c, "locked");
-			lineedit_escape_print(&(c->le), ESC_DEFAULT, 0);
+			cli_print(c, ESC_COLOR_FG_RED "locked" ESC_DEFAULT);
 		} else {
 			cli_print(c, "empty");
 		}

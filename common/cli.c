@@ -367,10 +367,21 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 
 	if (!strcmp(argv[0], "log")) {
 		if (argc == 1) {
-			cli_print(c, "Required argument is missing.\r\n");
+			cli_print(c, "Required argument is missing (print)\r\n");
 		} else {
 			if (!strcmp(argv[1], "print")) {
 				cli_cmd_log_print(c);
+			}
+		}
+		return CLI_EXECUTE_OK;
+	}
+
+	if (!strcmp(argv[0], "fs")) {
+		if (argc == 1) {
+			cli_print(c, "Required argument is missing (format, list, download, upload)\r\n");
+		} else {
+			if (!strcmp(argv[1], "format")) {
+				cli_cmd_fs_format(c);
 			}
 		}
 		return CLI_EXECUTE_OK;

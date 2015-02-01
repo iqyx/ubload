@@ -61,7 +61,7 @@ static void ubload_led_init(void) {
  * Filesystem is mounted from this flash device during the initialization,
  * it can be accessed using flash_fs global variable.
  ******************************************************************************/
-static struct flash_dev flash1;
+struct flash_dev flash1;
 struct sffs flash_fs; /* TODO: cannot be static, CLI uses it */
 
 static void ubload_flash_init(void) {

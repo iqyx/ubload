@@ -412,3 +412,25 @@ int32_t cli_cmd_log_print(struct cli *c) {
 
 	return CLI_CMD_LOG_PRINT_OK;
 }
+
+
+int32_t cli_cmd_fs_format(struct cli *c) {
+
+	/* Unmounting is not needed for sffs. */
+	/* TODO: register sffs progress callback */
+	u_log(system_log, LOG_TYPE_INFO, "sffs: creating new filesystem");
+	if (sffs_format(&flash1) != SFFS_FORMAT_OK) {
+		u_log(system_log, LOG_TYPE_ERROR, "sffs: formatting failed");
+		return CLI_CMD_FS_FORMAT_FAILED;
+	}
+	u_log(system_log, LOG_TYPE_INFO, "sffs: new filesystem created.");
+
+	/* TODO: call ubload_flash_init instead */
+	sffs_init(&flash_fs);
+	if (sffs_mount(&flash_fs, &flash1) != SFFS_MOUNT_OK) {
+		u_log(system_log, LOG_TYPE_ERROR, "sffs: error while mounting sffs filesystem");
+	}
+	u_log(system_log, LOG_TYPE_INFO, "sffs: filesystem mounted successfully");
+
+	return CLI_CMD_FS_FORMAT_OK;
+}

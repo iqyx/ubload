@@ -55,17 +55,33 @@ int32_t cli_cmd_program_file(struct cli *c, char *file);
 #define CLI_CMD_PROGRAM_FILE_OK 0
 #define CLI_CMD_PROGRAM_FILE_FAILED -1
 
-int32_t cli_cmd_download(struct cli *c, char *file);
-#define CLI_CMD_DOWNLOAD_OK 0
-#define CLI_CMD_DOWNLOAD_FAILED -1
+int32_t cli_cmd_fs_download(struct cli *c, char *file);
+#define CLI_CMD_FS_DOWNLOAD_OK 0
+#define CLI_CMD_FS_DOWNLOAD_FAILED -1
+
+int32_t cli_cmd_fs_upload(struct cli *c, char *file);
+#define CLI_CMD_FS_UPLOAD_OK 0
+#define CLI_CMD_FS_UPLOAD_FAILED -1
+
+int32_t cli_cmd_fs_delete(struct cli *c, char *file);
+#define CLI_CMD_FS_DELETE_OK 0
+#define CLI_CMD_FS_DELETE_FAILED -1
 
 int32_t cli_cmd_erase(struct cli *c);
 #define CLI_CMD_ERASE_OK 0
 #define CLI_CMD_ERASE_FAILED -1
 
-int32_t cli_cmd_dump(struct cli *c, uint32_t addr, uint32_t len);
-#define CLI_CMD_DUMP_OK 0
-#define CLI_CMD_DUMP_FAILED -1
+int32_t cli_cmd_dump_console(struct cli *c, uint32_t addr, uint32_t len);
+#define CLI_CMD_DUMP_CONSOLE_OK 0
+#define CLI_CMD_DUMP_CONSOLE_FAILED -1
+
+int32_t cli_cmd_dump_xmodem(struct cli *c);
+#define CLI_CMD_DUMP_XMODEM_OK 0
+#define CLI_CMD_DUMP_XMODEM_FAILED -1
+
+int32_t cli_cmd_dump_file(struct cli *c, const char *file);
+#define CLI_CMD_DUMP_FILE_OK 0
+#define CLI_CMD_DUMP_FILE_FAILED -1
 
 int32_t cli_cmd_verify_flash(struct cli *c);
 #define CLI_CMD_VERIFY_FLASH_OK 0
@@ -82,6 +98,30 @@ int32_t cli_cmd_log_print(struct cli *c);
 int32_t cli_cmd_fs_format(struct cli *c);
 #define CLI_CMD_FS_FORMAT_OK 0
 #define CLI_CMD_FS_FORMAT_FAILED -1
+
+int32_t cli_cmd_config_print_key(struct cli *c, const char *key);
+#define CLI_CMD_CONFIG_PRINT_KEY_OK 0
+#define CLI_CMD_CONFIG_PRINT_KEY_FAILED -1
+
+int32_t cli_cmd_config_print_all(struct cli *c);
+#define CLI_CMD_CONFIG_PRINT_ALL_OK 0
+#define CLI_CMD_CONFIG_PRINT_ALL_FAILED -1
+
+int32_t cli_cmd_config_set(struct cli *c, const char *key, const char *value);
+#define CLI_CMD_CONFIG_SET_OK 0
+#define CLI_CMD_CONFIG_SET_FAILED -1
+
+int32_t cli_cmd_config_default(struct cli *c);
+#define CLI_CMD_CONFIG_DEFAULT_OK 0
+#define CLI_CMD_CONFIG_DEFAULT_FAILED -1
+
+int32_t cli_cmd_config_save(struct cli *c);
+#define CLI_CMD_CONFIG_SAVE_OK 0
+#define CLI_CMD_CONFIG_SAVE_FAILED -1
+
+int32_t cli_cmd_config_load(struct cli *c);
+#define CLI_CMD_CONFIG_LOAD_OK 0
+#define CLI_CMD_CONFIG_LOAD_FAILED -1
 
 
 #endif

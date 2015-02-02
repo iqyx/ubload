@@ -74,7 +74,7 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]);
 #define CLI_EXECUTE_OK 0
 #define CLI_EXECUTE_FAILED -1
 
-int32_t cli_print(struct cli *c, char *s);
+int32_t cli_print(struct cli *c, const char *s);
 #define CLI_PRINT_OK 0
 #define CLI_PRINT_FAILED -1
 

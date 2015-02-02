@@ -265,14 +265,23 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 
 	/* At least one argument is given. */
 	if (!strcmp(argv[0], "dump")) {
-		if (argc < 3) {
-			cli_print(c, "Missing argument(s).\r\n");
-		}
-		if (argc == 3) {
-			uint32_t origin = atoi(argv[1]);
-			uint32_t length = atoi(argv[2]);
+		if (argc == 1) {
+			cli_print(c, "Required argument is missing (<filename>, xmodem, console)\r\n");
+		} else {
+			if (!strcmp(argv[1], "xmodem")) {
+				cli_cmd_dump_xmodem(c);
+			} else if (!strcmp(argv[1], "console")) {
+				if (argc < 4) {
+					cli_print(c, "Required argument is missing.\r\n");
+				} else {
+					uint32_t origin = atoi(argv[2]);
+					uint32_t length = atoi(argv[3]);
+					cli_cmd_dump_console(c, FW_IMAGE_BASE + origin, length);
+				}
+			} else {
+				cli_cmd_dump_file(c, argv[1]);
+			}
 
-			cli_cmd_dump(c, FW_IMAGE_BASE + origin, length);
 		}
 		return CLI_EXECUTE_OK;
 	}
@@ -303,16 +312,71 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(argv[0], "download")) {
+	if (!strcmp(argv[0], "fs")) {
 
 		if (argc == 1) {
-			cli_print(c, "Required argument is missing.\r\n");
-		}
-		if (argc == 2) {
-			cli_cmd_download(c, argv[1]);
+			cli_print(c, "Required argument is missing (download, upload, delete, format)\r\n");
+		} else {
+			if (!strcmp(argv[1], "download")) {
+				if (argc < 3) {
+					cli_print(c, "Filename missing\r\n");
+				} else {
+					cli_cmd_fs_download(c, argv[1]);
+				}
+			}
+			if (!strcmp(argv[1], "upload")) {
+				if (argc < 3) {
+					cli_print(c, "Filename missing\r\n");
+				} else {
+					cli_cmd_fs_upload(c, argv[1]);
+				}
+			}
+			if (!strcmp(argv[1], "delete")) {
+				if (argc < 3) {
+					cli_print(c, "Filename missing\r\n");
+				} else {
+					cli_cmd_fs_delete(c, argv[1]);
+				}
+			}
+			if (!strcmp(argv[1], "format")) {
+				cli_cmd_fs_format(c);
+			}
 		}
 		return CLI_EXECUTE_OK;
 	}
+
+	if (!strcmp(argv[0], "config")) {
+
+		if (argc == 1) {
+			cli_print(c, "Required argument is missing (set, print, save, load, default)\r\n");
+		} else {
+			if (!strcmp(argv[1], "set")) {
+				if (argc < 4) {
+					cli_print(c, "Config key or value is missing.\r\n");
+				} else {
+					cli_cmd_config_set(c, argv[2], argv[3]);
+				}
+			}
+			if (!strcmp(argv[1], "print")) {
+				if (argc < 3) {
+					cli_cmd_config_print_all(c);
+				} else {
+					cli_cmd_config_print_key(c, argv[2]);
+				}
+			}
+			if (!strcmp(argv[1], "save")) {
+				cli_cmd_config_save(c);
+			}
+			if (!strcmp(argv[1], "load")) {
+				cli_cmd_config_load(c);
+			}
+			if (!strcmp(argv[1], "default")) {
+				cli_cmd_config_default(c);
+			}
+		}
+		return CLI_EXECUTE_OK;
+	}
+
 
 	if (!strcmp(argv[0], "verify")) {
 		if (argc == 1) {
@@ -376,17 +440,6 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 		return CLI_EXECUTE_OK;
 	}
 
-	if (!strcmp(argv[0], "fs")) {
-		if (argc == 1) {
-			cli_print(c, "Required argument is missing (format, list, download, upload)\r\n");
-		} else {
-			if (!strcmp(argv[1], "format")) {
-				cli_cmd_fs_format(c);
-			}
-		}
-		return CLI_EXECUTE_OK;
-	}
-
 	cli_print(c, "Unknown command '");
 	cli_print(c, argv[0]);
 	cli_print(c, "'\r\n");
@@ -395,7 +448,7 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 }
 
 
-int32_t cli_print(struct cli *c, char *s) {
+int32_t cli_print(struct cli *c, const char *s) {
 	if (c == NULL || s == NULL) {
 		return CLI_PRINT_FAILED;
 	}

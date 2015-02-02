@@ -280,10 +280,10 @@ int32_t cli_cmd_program_file(struct cli *c, char *file) {
 }
 
 
-int32_t cli_cmd_download(struct cli *c, char *file) {
+int32_t cli_cmd_fs_download(struct cli *c, char *file) {
 	if (u_assert(c != NULL) ||
 	    u_assert(file != NULL)) {
-		return CLI_CMD_PROGRAM_FILE_FAILED;
+		return CLI_CMD_FS_DOWNLOAD_FAILED;
 	}
 
 	cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
@@ -312,7 +312,23 @@ int32_t cli_cmd_download(struct cli *c, char *file) {
 	xmodem_free(&x);
 	sffs_close(&f);
 
-	return CLI_CMD_DOWNLOAD_OK;
+	return CLI_CMD_FS_DOWNLOAD_OK;
+}
+
+
+int32_t cli_cmd_fs_upload(struct cli *c, char *file) {
+	(void)file;
+	cli_print(c, "Unimplemented.\r\n");
+
+	return CLI_CMD_FS_UPLOAD_OK;
+}
+
+
+int32_t cli_cmd_fs_delete(struct cli *c, char *file) {
+	(void)file;
+
+	cli_print(c, "Unimplemented.\r\n");
+	return CLI_CMD_FS_DELETE_OK;
 }
 
 
@@ -346,9 +362,9 @@ static void hex_to_string8(char *s, uint8_t n) {
 }
 
 
-int32_t cli_cmd_dump(struct cli *c, uint32_t addr, uint32_t len) {
+int32_t cli_cmd_dump_console(struct cli *c, uint32_t addr, uint32_t len) {
 	if (u_assert(c != NULL)) {
-		return CLI_CMD_DUMP_FAILED;
+		return CLI_CMD_DUMP_CONSOLE_FAILED;
 	}
 
 	for (uint32_t i = 0; i < len; i++) {
@@ -375,7 +391,25 @@ int32_t cli_cmd_dump(struct cli *c, uint32_t addr, uint32_t len) {
 		}
 	}
 
-	return CLI_CMD_DUMP_OK;
+	return CLI_CMD_DUMP_CONSOLE_OK;
+}
+
+
+int32_t cli_cmd_dump_xmodem(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_DUMP_XMODEM_FAILED;
+	}
+
+	return CLI_CMD_DUMP_XMODEM_OK;
+}
+
+
+int32_t cli_cmd_dump_file(struct cli *c, const char *file) {
+	if (u_assert(c != NULL && file != NULL)) {
+		return CLI_CMD_DUMP_FILE_FAILED;
+	}
+
+	return CLI_CMD_DUMP_FILE_OK;
 }
 
 
@@ -416,6 +450,14 @@ int32_t cli_cmd_log_print(struct cli *c) {
 
 int32_t cli_cmd_fs_format(struct cli *c) {
 
+	cli_print(c, "You are going to format the SFFS filesystem (all saved data will be lost).\r\n");
+	if (cli_confirm(c) == CLI_CONFIRM_YES) {
+		cli_print(c, "\r\n");
+	} else {
+		cli_print(c, "\r\n");
+		return CLI_CMD_FS_FORMAT_FAILED;
+	}
+
 	/* Unmounting is not needed for sffs. */
 	/* TODO: register sffs progress callback */
 	u_log(system_log, LOG_TYPE_INFO, "sffs: creating new filesystem");
@@ -434,3 +476,106 @@ int32_t cli_cmd_fs_format(struct cli *c) {
 
 	return CLI_CMD_FS_FORMAT_OK;
 }
+
+
+int32_t cli_cmd_config_print_key(struct cli *c, const char *key) {
+	if (u_assert(c != NULL && key != NULL)) {
+		return CLI_CMD_CONFIG_PRINT_KEY_FAILED;
+	}
+
+	char s[50] = {0};
+
+	if (!strcmp(key, "host")) {
+		snprintf(s, sizeof(s), "'%s'", running_config.host);
+	}
+
+	if (s[0] != '\0') {
+		cli_print(c, key);
+		cli_print(c, " = ");
+		cli_print(c, s);
+		cli_print(c, "\r\n");
+		return CLI_CMD_CONFIG_PRINT_KEY_OK;
+	} else {
+		cli_print(c, "Unknown configuration key '");
+		cli_print(c, key);
+		cli_print(c, "'\r\n");
+		return CLI_CMD_CONFIG_PRINT_KEY_FAILED;
+	}
+}
+
+
+int32_t cli_cmd_config_print_all(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_CONFIG_PRINT_ALL_FAILED;
+	}
+
+	cli_cmd_config_print_key(c, "host");
+
+	return CLI_CMD_CONFIG_PRINT_ALL_OK;
+}
+
+
+int32_t cli_cmd_config_set(struct cli *c, const char *key, const char *value) {
+	if (u_assert(c != NULL && key != NULL && value != NULL)) {
+		return CLI_CMD_CONFIG_SET_FAILED;
+	}
+
+	if (!strcmp(key, "host")) {
+		strlcpy(running_config.host, value, sizeof(running_config.host));
+		return CLI_CMD_CONFIG_SET_OK;
+	}
+
+	return CLI_CMD_CONFIG_SET_FAILED;
+}
+
+
+int32_t cli_cmd_config_default(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_CONFIG_DEFAULT_FAILED;
+	}
+
+	/* Initialize running configuration using defaults. */
+	memcpy(&running_config, &default_config, sizeof(running_config));
+	u_log(system_log, LOG_TYPE_INFO, "config: default configuration loaded");
+
+	return CLI_CMD_CONFIG_DEFAULT_OK;
+}
+
+
+int32_t cli_cmd_config_save(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_CONFIG_SAVE_FAILED;
+	}
+
+	struct sffs_file f;
+	if (sffs_open_id(&flash_fs, &f, 1001, SFFS_OVERWRITE) != SFFS_OPEN_ID_OK) {
+		return CLI_CMD_CONFIG_SAVE_FAILED;
+	}
+	sffs_write(&f, (uint8_t *)&running_config, sizeof(running_config));
+	sffs_close(&f);
+	u_log(system_log, LOG_TYPE_INFO, "config: running configuration saved");
+
+	return CLI_CMD_CONFIG_SAVE_OK;
+}
+
+
+int32_t cli_cmd_config_load(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_CONFIG_LOAD_FAILED;
+	}
+
+	u_log(system_log, LOG_TYPE_INFO, "config: loading saved running configuration");
+	struct sffs_file f;
+	if (sffs_open_id(&flash_fs, &f, 1001, SFFS_READ) != SFFS_OPEN_ID_OK) {
+		u_log(system_log, LOG_TYPE_ERROR, "config: cannot open saved configuration");
+		return CLI_CMD_CONFIG_LOAD_FAILED;
+	}
+	if (sffs_read(&f, (uint8_t *)&running_config, sizeof(running_config)) != sizeof(running_config)) {
+		u_log(system_log, LOG_TYPE_ERROR, "config: error reading saved configuration");
+	}
+	sffs_close(&f);
+
+	return CLI_CMD_CONFIG_LOAD_OK;
+}
+
+

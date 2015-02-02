@@ -113,6 +113,18 @@ static void ubload_flash_init(void) {
 static void ubload_config_init(void) {
 	/* Initialize running configuration using defaults. */
 	memcpy(&running_config, &default_config, sizeof(running_config));
+
+	/* And try to load saved configuration */
+	u_log(system_log, LOG_TYPE_INFO, "config: loading saved running configuration");
+	struct sffs_file f;
+	if (sffs_open_id(&flash_fs, &f, 1001, SFFS_READ) != SFFS_OPEN_ID_OK) {
+		u_log(system_log, LOG_TYPE_ERROR, "config: cannot open saved configuration");
+		return;
+	}
+	if (sffs_read(&f, (uint8_t *)&running_config, sizeof(running_config)) != sizeof(running_config)) {
+		u_log(system_log, LOG_TYPE_ERROR, "config: error reading saved configuration");
+	}
+	sffs_close(&f);
 }
 
 

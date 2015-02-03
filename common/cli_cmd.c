@@ -249,10 +249,14 @@ int32_t cli_cmd_program_file(struct cli *c, char *file) {
 	}
 
 	struct sffs_file f;
-	sffs_open_id(&flash_fs, &f, 1000, SFFS_READ);
+	if (sffs_open(&flash_fs, &f, file, SFFS_READ) != SFFS_OPEN_OK) {
+		cli_print(c, "Cannot open firmware file.\r\n");
+		return CLI_CMD_PROGRAM_FILE_FAILED;
+	}
 
+	cli_print(c, "Calculating file size...\r\n");
 	uint32_t size = 0;
-	sffs_file_size(&flash_fs, 1000, &size);
+	sffs_file_size(&flash_fs, &f, &size);
 
 	char s[80];
 	snprintf(s, sizeof(s), "Flashing firmware %s, size %u bytes\r\n", file, (unsigned int)(size));
@@ -286,10 +290,14 @@ int32_t cli_cmd_fs_download(struct cli *c, char *file) {
 		return CLI_CMD_FS_DOWNLOAD_FAILED;
 	}
 
-	cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
 
 	struct sffs_file f;
-	sffs_open_id(&flash_fs, &f, 1000, SFFS_OVERWRITE);
+	if (sffs_open(&flash_fs, &f, file, SFFS_OVERWRITE) != SFFS_OPEN_OK) {
+		cli_print(c, "Cannot create file.\r\n");
+		return CLI_CMD_FS_DOWNLOAD_FAILED;
+	}
+
+	cli_print(c, "Go ahead and send your firmware using XMODEM... (press ESC to cancel)\r\n");
 
 	struct xmodem x;
 	xmodem_init(&x, c->console);

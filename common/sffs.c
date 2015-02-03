@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "u_assert.h"
+#include "u_log.h"
 #include "sffs.h"
 #include "spi_flash.h"
 
@@ -519,6 +520,9 @@ int32_t sffs_open_id(struct sffs *fs, struct sffs_file *f, uint32_t file_id, uin
 		return SFFS_OPEN_ID_FAILED;
 	}
 
+	f->fs = fs;
+	f->file_id = file_id;
+
 	switch (mode) {
 		case SFFS_OVERWRITE:
 			/* remove old file first, new one will be created.
@@ -530,7 +534,7 @@ int32_t sffs_open_id(struct sffs *fs, struct sffs_file *f, uint32_t file_id, uin
 
 		case SFFS_APPEND:
 			/* Determine end of the file and seek to that position. */
-			sffs_file_size(fs, file_id, &(f->pos));
+			sffs_file_size(fs, f, &(f->pos));
 			break;
 
 		case SFFS_READ:
@@ -539,11 +543,9 @@ int32_t sffs_open_id(struct sffs *fs, struct sffs_file *f, uint32_t file_id, uin
 			break;
 
 		default:
+			f->fs = NULL;
 			return SFFS_OPEN_ID_FAILED;
 	}
-
-	f->fs = fs;
-	f->file_id = file_id;
 
 	return SFFS_OPEN_ID_OK;
 }
@@ -785,11 +787,12 @@ int32_t sffs_file_remove(struct sffs *fs, uint32_t file_id) {
 }
 
 
-int32_t sffs_file_size(struct sffs *fs, uint32_t file_id, uint32_t *size) {
+int32_t sffs_file_size(struct sffs *fs, struct sffs_file *f, uint32_t *size) {
 	if (u_assert(fs != NULL)) {
 		return SFFS_FILE_SIZE_FAILED;
 	}
 
+	uint32_t file_id = f->file_id;
 	uint32_t block = 0;
 	uint32_t total_size = 0;
 	struct sffs_page page;

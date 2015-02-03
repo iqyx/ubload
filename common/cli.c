@@ -321,21 +321,21 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 				if (argc < 3) {
 					cli_print(c, "Filename missing\r\n");
 				} else {
-					cli_cmd_fs_download(c, argv[1]);
+					cli_cmd_fs_download(c, argv[2]);
 				}
 			}
 			if (!strcmp(argv[1], "upload")) {
 				if (argc < 3) {
 					cli_print(c, "Filename missing\r\n");
 				} else {
-					cli_cmd_fs_upload(c, argv[1]);
+					cli_cmd_fs_upload(c, argv[2]);
 				}
 			}
 			if (!strcmp(argv[1], "delete")) {
 				if (argc < 3) {
 					cli_print(c, "Filename missing\r\n");
 				} else {
-					cli_cmd_fs_delete(c, argv[1]);
+					cli_cmd_fs_delete(c, argv[2]);
 				}
 			}
 			if (!strcmp(argv[1], "format")) {

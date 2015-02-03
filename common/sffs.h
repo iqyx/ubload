@@ -510,12 +510,11 @@ int32_t sffs_file_remove(struct sffs *fs, uint32_t file_id);
  * Compute size of specified file.
  *
  * @param fs A SFFS Filesystem.
- * @param file_id File ID.
  *
  * @return SFFS_FILE_SIZE_OK on success or
  *         SFFS_FILE_SIZE_FAILED otherwise.
  */
-int32_t sffs_file_size(struct sffs *fs, uint32_t file_id, uint32_t *size);
+int32_t sffs_file_size(struct sffs *fs, struct sffs_file *f, uint32_t *size);
 #define SFFS_FILE_SIZE_OK 0
 #define SFFS_FILE_SIZE_FAILED -1
 

@@ -117,7 +117,7 @@ static void ubload_config_init(void) {
 	/* And try to load saved configuration */
 	u_log(system_log, LOG_TYPE_INFO, "config: loading saved running configuration");
 	struct sffs_file f;
-	if (sffs_open_id(&flash_fs, &f, 1001, SFFS_READ) != SFFS_OPEN_ID_OK) {
+	if (sffs_open(&flash_fs, &f, "ubload.cfg", SFFS_READ) != SFFS_OPEN_OK) {
 		u_log(system_log, LOG_TYPE_ERROR, "config: cannot open saved configuration");
 		return;
 	}

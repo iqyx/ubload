@@ -32,6 +32,27 @@
 #define SFFS_MASTER_MAGIC 0x93827485
 #define SFFS_METADATA_MAGIC 0x87985214
 #define SFFS_LABEL_SIZE 8
+#define SFFS_DIR_FILE_NAME_LENGTH 32
+
+struct sffs;
+
+struct sffs_file {
+	uint32_t pos;
+	uint16_t file_id;
+
+	struct sffs *fs;
+};
+
+enum sffs_dir_item_state {
+	SFFS_DIR_ITEM_STATE_FREE,
+	SFFS_DIR_ITEM_STATE_USED,
+};
+
+struct sffs_dir_item {
+	enum sffs_dir_item_state state;
+	uint32_t file_id;
+	char file_name[SFFS_DIR_FILE_NAME_LENGTH];
+};
 
 struct sffs {
 	uint32_t page_size;
@@ -39,17 +60,11 @@ struct sffs {
 	uint32_t sector_count;
 	uint32_t data_pages_per_sector;
 	uint32_t first_data_page;
+	struct sffs_file root_dir;
 
 	struct flash_dev *flash;
 
 	char label[SFFS_LABEL_SIZE];
-};
-
-struct sffs_file {
-	uint32_t pos;
-	uint16_t file_id;
-
-	struct sffs *fs;
 };
 
 struct sffs_page {
@@ -508,6 +523,17 @@ int32_t sffs_get_info(struct sffs *fs, struct sffs_info *info);
 #define SFFS_GET_INFO_OK 0
 #define SFFS_GET_INFO_FAILED -1
 
+int32_t sffs_get_id_by_file_name(struct sffs *fs, const char *fname, uint32_t *id);
+#define SFFS_GET_ID_BY_FILE_NAME_OK 0
+#define SFFS_GET_ID_BY_FILE_NAME_FAILED -1
+#define SFFS_GET_ID_BY_FILE_NAME_NOT_FOUND -2
 
+int32_t sffs_add_file_name(struct sffs *fs, const char *fname, uint32_t *id);
+#define SFFS_ADD_FILE_NAME_OK 0
+#define SFFS_ADD_FILE_NAME_FAILED -1
+
+int32_t sffs_open(struct sffs *fs, struct sffs_file *f, const char *fname, uint32_t mode);
+#define SFFS_OPEN_OK 0
+#define SFFS_OPEN_FAILED -1
 
 #endif

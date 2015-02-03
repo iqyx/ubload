@@ -548,10 +548,13 @@ int32_t cli_cmd_config_save(struct cli *c) {
 	}
 
 	struct sffs_file f;
-	if (sffs_open_id(&flash_fs, &f, 1001, SFFS_OVERWRITE) != SFFS_OPEN_ID_OK) {
+	if (sffs_open(&flash_fs, &f, "ubload.cfg", SFFS_OVERWRITE) != SFFS_OPEN_OK) {
 		return CLI_CMD_CONFIG_SAVE_FAILED;
 	}
-	sffs_write(&f, (uint8_t *)&running_config, sizeof(running_config));
+	if (sffs_write(&f, (uint8_t *)&running_config, sizeof(running_config)) != sizeof(running_config)) {
+		u_log(system_log, LOG_TYPE_ERROR, "config: error saving the configuration");
+		return CLI_CMD_CONFIG_SAVE_FAILED;
+	}
 	sffs_close(&f);
 	u_log(system_log, LOG_TYPE_INFO, "config: running configuration saved");
 
@@ -566,12 +569,13 @@ int32_t cli_cmd_config_load(struct cli *c) {
 
 	u_log(system_log, LOG_TYPE_INFO, "config: loading saved running configuration");
 	struct sffs_file f;
-	if (sffs_open_id(&flash_fs, &f, 1001, SFFS_READ) != SFFS_OPEN_ID_OK) {
+	if (sffs_open(&flash_fs, &f, "ubload.cfg", SFFS_READ) != SFFS_OPEN_OK) {
 		u_log(system_log, LOG_TYPE_ERROR, "config: cannot open saved configuration");
 		return CLI_CMD_CONFIG_LOAD_FAILED;
 	}
 	if (sffs_read(&f, (uint8_t *)&running_config, sizeof(running_config)) != sizeof(running_config)) {
 		u_log(system_log, LOG_TYPE_ERROR, "config: error reading saved configuration");
+		return CLI_CMD_CONFIG_LOAD_FAILED;
 	}
 	sffs_close(&f);
 

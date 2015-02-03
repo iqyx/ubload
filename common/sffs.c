@@ -84,6 +84,10 @@ int32_t sffs_mount(struct sffs *fs, struct flash_dev *flash) {
 	/* TODO: check SFFS master page for validity */
 	/* TODO: fetch filesystem label */
 
+	/* Open root file directory. Do not check if it was successful. */
+	sffs_open_id(fs, &(fs->root_dir), 1, SFFS_READ);
+
+
 	return SFFS_MOUNT_OK;
 }
 
@@ -93,7 +97,8 @@ int32_t sffs_free(struct sffs *fs) {
 		return SFFS_FREE_FAILED;
 	}
 
-	/* nothing to do yet */
+	sffs_close(&(fs->root_dir));
+
 	return SFFS_FREE_OK;
 }
 
@@ -863,4 +868,98 @@ int32_t sffs_get_info(struct sffs *fs, struct sffs_info *info) {
 	info->space_used = fs->page_size * info->pages_used;
 
 	return SFFS_GET_INFO_OK;
+}
+
+
+int32_t sffs_get_id_by_file_name(struct sffs *fs, const char *fname, uint32_t *id) {
+	if (u_assert(fs!= NULL && fname != NULL && id != NULL)) {
+		return SFFS_GET_ID_BY_FILE_NAME_FAILED;
+	}
+
+	/* Linear search. Don't laugh plz. */
+	sffs_seek(&(fs->root_dir), 0);
+	struct sffs_dir_item item;
+	while (sffs_read(&(fs->root_dir), (uint8_t *)&item, sizeof(struct sffs_dir_item)) > 0) {
+		/* Make sure the file name is terminated properly. */
+		item.file_name[SFFS_DIR_FILE_NAME_LENGTH - 1] = '\0';
+
+		if (item.state == SFFS_DIR_ITEM_STATE_USED) {
+			if (!strcmp(fname, item.file_name)) {
+				*id = item.file_id;
+				return SFFS_GET_ID_BY_FILE_NAME_OK;
+			}
+		}
+	}
+
+	return SFFS_GET_ID_BY_FILE_NAME_NOT_FOUND;
+}
+
+
+int32_t sffs_add_file_name(struct sffs *fs, const char *fname, uint32_t *id) {
+	if (u_assert(fs!= NULL && fname != NULL && id != NULL)) {
+		return SFFS_ADD_FILE_NAME_FAILED;
+	}
+
+	uint32_t tmp_id;
+	/* If the filename is already present in the directory, return it. */
+	if (sffs_get_id_by_file_name(fs, fname, &tmp_id) == SFFS_GET_ID_BY_FILE_NAME_OK) {
+		*id = tmp_id;
+		return SFFS_ADD_FILE_NAME_OK;
+	}
+
+	/* Find first free directory entry. */
+	sffs_seek(&(fs->root_dir), 0);
+	uint32_t pos = 0;
+	struct sffs_dir_item item;
+	while (sffs_read(&(fs->root_dir), (uint8_t *)&item, sizeof(struct sffs_dir_item)) > 0) {
+		if (item.state == SFFS_DIR_ITEM_STATE_FREE) {
+			item.state = SFFS_DIR_ITEM_STATE_USED;
+			strlcpy(item.file_name, fname, SFFS_DIR_FILE_NAME_LENGTH);
+			/* TODO: better id allocation scheme. */
+			item.file_id = pos + 1000;
+
+			/* Go back one item and overwrite the current item. */
+			/* TODO: do not use f->pos */
+			sffs_seek(&(fs->root_dir), fs->root_dir.pos - sizeof(struct sffs_dir_item));
+			sffs_write(&(fs->root_dir), (uint8_t *)&item, sizeof(struct sffs_dir_item));
+			return SFFS_ADD_FILE_NAME_OK;
+		}
+		pos++;
+	}
+
+	/* No such file name was found, append it. Current position is at the end. */
+	item.state = SFFS_DIR_ITEM_STATE_USED;
+	strlcpy(item.file_name, fname, SFFS_DIR_FILE_NAME_LENGTH);
+	item.file_id = pos + 1000;
+
+	sffs_write(&(fs->root_dir), (uint8_t *)&item, sizeof(struct sffs_dir_item));
+	return SFFS_ADD_FILE_NAME_OK;
+}
+
+
+int32_t sffs_open(struct sffs *fs, struct sffs_file *f, const char *fname, uint32_t mode) {
+	if (u_assert(fs!= NULL && f != NULL && fname != NULL)) {
+		return SFFS_OPEN_FAILED;
+	}
+
+	uint32_t id;
+	if (mode == SFFS_READ) {
+		if (sffs_get_id_by_file_name(fs, fname, &id) != SFFS_GET_ID_BY_FILE_NAME_OK) {
+			/* Cannot find existing file. */
+			return SFFS_OPEN_FAILED;
+		}
+	} else {
+		if (sffs_add_file_name(fs, fname, &id) != SFFS_ADD_FILE_NAME_OK) {
+			/* Cannot create new file. */
+			return SFFS_OPEN_FAILED;
+		}
+	}
+
+
+	/* ID is valid now. */
+	if (sffs_open_id(fs, f, id, mode) == SFFS_OPEN_ID_OK) {
+		return SFFS_OPEN_OK;
+	} else {
+		return SFFS_OPEN_FAILED;
+	}
 }

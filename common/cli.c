@@ -507,6 +507,7 @@ static uint8_t cli_hex_char_value(char c) {
 	if (c >= 'A' && c <= 'F') {
 		return c - 'A' + 10;
 	}
+	return 0;
 }
 
 

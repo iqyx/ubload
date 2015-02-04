@@ -417,6 +417,52 @@ int32_t cli_cmd_dump_file(struct cli *c, const char *file) {
 		return CLI_CMD_DUMP_FILE_FAILED;
 	}
 
+	/* Firmware image must be parsed first. */
+	if (main_fw.parsed == false) {
+		if (fw_image_parse(&main_fw) != FW_IMAGE_PARSE_OK) {
+			return CLI_CMD_DUMP_FILE_FAILED;
+		}
+	}
+
+	uint32_t size = main_fw.verified_section.len + main_fw.verification_section.len + 16;
+
+	/* Prepare the output file. */
+	struct sffs_file f;
+	if (sffs_open(&flash_fs, &f, file, SFFS_OVERWRITE) != SFFS_OPEN_OK) {
+		cli_print(c, "Cannot create file.\r\n");
+		return CLI_CMD_DUMP_FILE_FAILED;
+	}
+
+	char s[80];
+	snprintf(s, sizeof(s), "Dumping firmware to file %s, size %u bytes\r\n", file, (unsigned int)(size));
+	cli_print(c, s);
+
+	cli_progress_callback(0, size, (void *)c);
+	int32_t len = 0;
+	uint32_t offset = 0;
+	uint32_t update = 0;
+	while (offset < size) {
+		len = 512;
+		if ((size - offset) < (uint32_t)len) {
+			len = size - offset;
+		}
+		len = sffs_write(&f, (unsigned char *)(main_fw.base + offset), (uint32_t)len);
+		if (len < 0) {
+			break;
+		}
+		offset += len;
+		update += len;
+
+		if (update >= 1024) {
+			cli_progress_callback(offset, size, (void *)c);
+			update = 0;
+		}
+	}
+
+	cli_print(c, "\r\n");
+	sffs_close(&f);
+	u_log(system_log, LOG_TYPE_INFO, "Current firmware saved to file %s (size %u bytes)", file, size);
+
 	return CLI_CMD_DUMP_FILE_OK;
 }
 

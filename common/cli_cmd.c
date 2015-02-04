@@ -333,9 +333,25 @@ int32_t cli_cmd_fs_upload(struct cli *c, char *file) {
 
 
 int32_t cli_cmd_fs_delete(struct cli *c, char *file) {
-	(void)file;
+	if (u_assert(c != NULL && file != NULL)) {
+		return CLI_CMD_FS_DELETE_FAILED;
+	}
 
-	cli_print(c, "Unimplemented.\r\n");
+	struct sffs_file f;
+	if (sffs_open(&flash_fs, &f, file, SFFS_READ) != SFFS_OPEN_OK) {
+		cli_print(c, "Cannot find requested file.\r\n");
+		return CLI_CMD_FS_DELETE_FAILED;
+	}
+
+	if (sffs_file_remove(&flash_fs, &f) == SFFS_FILE_REMOVE_OK) {
+		sffs_close(&f);
+		cli_print(c, "File deleted successfully.\r\n");
+		return CLI_CMD_FS_DELETE_OK;
+	} else {
+		sffs_close(&f);
+		cli_print(c, "File deletion failed.\r\n");
+		return CLI_CMD_FS_DELETE_FAILED;
+	}
 	return CLI_CMD_FS_DELETE_OK;
 }
 

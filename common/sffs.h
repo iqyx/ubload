@@ -497,12 +497,11 @@ int32_t sffs_seek(struct sffs_file *f, uint32_t pos);
  * Removes all blocks for file @a file_id. File should be closed during removal.
  *
  * @param fs A SFFS filesystem.
- * @param file_id ID of the file to remove.
  *
  * @return SFFS_FILE_REMOVE_OK on success or
  *         SFFS_FILE_REMOVE_FAILED otherise.
  */
-int32_t sffs_file_remove(struct sffs *fs, uint32_t file_id);
+int32_t sffs_file_remove(struct sffs *fs, struct sffs_file *f);
 #define SFFS_FILE_REMOVE_OK 0
 #define SFFS_FILE_REMOVE_FAILED -1
 

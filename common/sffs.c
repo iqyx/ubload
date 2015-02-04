@@ -528,7 +528,7 @@ int32_t sffs_open_id(struct sffs *fs, struct sffs_file *f, uint32_t file_id, uin
 			/* remove old file first, new one will be created.
 			 * We are not checking return value intentionally.
 			 * Write pointer is set to the beginning. */
-			sffs_file_remove(fs, file_id);
+			sffs_file_remove(fs, f);
 			f->pos = 0;
 			break;
 
@@ -761,10 +761,15 @@ int32_t sffs_seek(struct sffs_file *f, uint32_t pos) {
 }
 
 
-int32_t sffs_file_remove(struct sffs *fs, uint32_t file_id) {
+int32_t sffs_file_remove(struct sffs *fs, struct sffs_file *f) {
 	if (u_assert(fs != NULL)) {
 		return SFFS_FILE_REMOVE_FAILED;
 	}
+
+	if (sffs_check_file_opened(f) != SFFS_CHECK_FILE_OPENED_OK) {
+		return SFFS_FILE_REMOVE_FAILED;
+	}
+	uint32_t file_id = f->file_id;
 
 	/* cannot remove filesystem metadata file */
 	if (file_id == 0) {

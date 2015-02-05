@@ -528,7 +528,7 @@ int32_t sffs_open_id(struct sffs *fs, struct sffs_file *f, uint32_t file_id, uin
 			/* remove old file first, new one will be created.
 			 * We are not checking return value intentionally.
 			 * Write pointer is set to the beginning. */
-			sffs_file_remove(fs, f);
+			sffs_file_remove_id(fs, file_id);
 			f->pos = 0;
 			break;
 
@@ -588,6 +588,7 @@ int32_t sffs_write(struct sffs_file *f, unsigned char *buf, uint32_t len) {
 		uint8_t page_data[f->fs->page_size];
 		struct sffs_page page;
 		uint32_t loaded_old = 0;
+		uint32_t old_len = 0;
 
 		if (sffs_find_page(f->fs, f->file_id, i, &page) == SFFS_FIND_PAGE_OK) {
 			/* page is valid. Get its address and read from flash */
@@ -596,6 +597,10 @@ int32_t sffs_write(struct sffs_file *f, unsigned char *buf, uint32_t len) {
 			if (sffs_cached_read(f->fs, addr, page_data, sizeof(page_data)) != SFFS_CACHED_READ_OK) {
 				return -1;
 			}
+
+			struct sffs_metadata_item md;
+			sffs_get_page_metadata(f->fs, &page, &md);
+			old_len = md.size;
 
 			loaded_old = 1;
 		} else {
@@ -656,6 +661,9 @@ int32_t sffs_write(struct sffs_file *f, unsigned char *buf, uint32_t len) {
 		struct sffs_metadata_item item;
 		item.block = i;
 		item.size = data_end % f->fs->page_size + 1;
+		if (loaded_old && old_len > item.size) {
+			item.size = old_len;
+		}
 		item.state = SFFS_PAGE_STATE_USED;
 		item.file_id = f->file_id;
 		sffs_set_page_metadata(f->fs, &new_page, &item);
@@ -761,19 +769,14 @@ int32_t sffs_seek(struct sffs_file *f, uint32_t pos) {
 }
 
 
-int32_t sffs_file_remove(struct sffs *fs, struct sffs_file *f) {
+int32_t sffs_file_remove_id(struct sffs *fs, uint32_t file_id) {
 	if (u_assert(fs != NULL)) {
-		return SFFS_FILE_REMOVE_FAILED;
+		return SFFS_FILE_REMOVE_ID_FAILED;
 	}
-
-	if (sffs_check_file_opened(f) != SFFS_CHECK_FILE_OPENED_OK) {
-		return SFFS_FILE_REMOVE_FAILED;
-	}
-	uint32_t file_id = f->file_id;
 
 	/* cannot remove filesystem metadata file */
 	if (file_id == 0) {
-		return SFFS_FILE_REMOVE_FAILED;
+		return SFFS_FILE_REMOVE_ID_FAILED;
 	}
 
 	/* iterate over file blocks until first find fails, mark all found blocks
@@ -788,7 +791,7 @@ int32_t sffs_file_remove(struct sffs *fs, struct sffs_file *f) {
 		block++;
 	}
 
-	return SFFS_FILE_REMOVE_OK;
+	return SFFS_FILE_REMOVE_ID_OK;
 }
 
 
@@ -908,10 +911,8 @@ int32_t sffs_add_file_name(struct sffs *fs, const char *fname, uint32_t *id) {
 		return SFFS_ADD_FILE_NAME_FAILED;
 	}
 
-	uint32_t tmp_id;
 	/* If the filename is already present in the directory, return it. */
-	if (sffs_get_id_by_file_name(fs, fname, &tmp_id) == SFFS_GET_ID_BY_FILE_NAME_OK) {
-		*id = tmp_id;
+	if (sffs_get_id_by_file_name(fs, fname, id) == SFFS_GET_ID_BY_FILE_NAME_OK) {
 		return SFFS_ADD_FILE_NAME_OK;
 	}
 
@@ -925,6 +926,7 @@ int32_t sffs_add_file_name(struct sffs *fs, const char *fname, uint32_t *id) {
 			strlcpy(item.file_name, fname, SFFS_DIR_FILE_NAME_LENGTH);
 			/* TODO: better id allocation scheme. */
 			item.file_id = pos + 1000;
+			*id = item.file_id;
 
 			/* Go back one item and overwrite the current item. */
 			/* TODO: do not use f->pos */
@@ -939,9 +941,36 @@ int32_t sffs_add_file_name(struct sffs *fs, const char *fname, uint32_t *id) {
 	item.state = SFFS_DIR_ITEM_STATE_USED;
 	strlcpy(item.file_name, fname, SFFS_DIR_FILE_NAME_LENGTH);
 	item.file_id = pos + 1000;
+	*id = item.file_id;
 
 	sffs_write(&(fs->root_dir), (uint8_t *)&item, sizeof(struct sffs_dir_item));
 	return SFFS_ADD_FILE_NAME_OK;
+}
+
+
+int32_t sffs_file_remove(struct sffs *fs, const char *name) {
+	if (u_assert(fs!= NULL)) {
+		return SFFS_FILE_REMOVE_FAILED;
+	}
+
+	sffs_seek(&(fs->root_dir), 0);
+	struct sffs_dir_item item;
+	while (sffs_read(&(fs->root_dir), (uint8_t *)&item, sizeof(struct sffs_dir_item)) > 0) {
+		if (!strcmp(name, item.file_name) && item.state == SFFS_DIR_ITEM_STATE_USED) {
+			sffs_file_remove_id(fs, item.file_id);
+
+			item.state = SFFS_DIR_ITEM_STATE_FREE;
+			item.file_id = 0;
+			item.file_name[0] = '\0';
+
+			/* Go back one item and overwrite the current item. */
+			/* TODO: do not use f->pos */
+			sffs_seek(&(fs->root_dir), fs->root_dir.pos - sizeof(struct sffs_dir_item));
+			sffs_write(&(fs->root_dir), (uint8_t *)&item, sizeof(struct sffs_dir_item));
+		}
+	}
+
+	return SFFS_FILE_REMOVE_OK;
 }
 
 
@@ -970,4 +999,54 @@ int32_t sffs_open(struct sffs *fs, struct sffs_file *f, const char *fname, uint3
 	} else {
 		return SFFS_OPEN_FAILED;
 	}
+}
+
+
+int32_t sffs_directory_open(struct sffs *fs, struct sffs_directory *dir, const char *path) {
+	if (u_assert(fs != NULL && dir != NULL && path != NULL)) {
+		return SFFS_DIRECTORY_OPEN_FAILED;
+	}
+
+	dir->fs = fs;
+	dir->pos = 0;
+
+	return SFFS_DIRECTORY_OPEN_OK;
+}
+
+
+int32_t sffs_directory_close(struct sffs_directory *dir) {
+	if (u_assert(dir != NULL)) {
+		return SFFS_DIRECTORY_CLOSE_FAILED;
+	}
+
+	/* Directory is not opened. */
+	if (dir->fs == NULL) {
+		return SFFS_DIRECTORY_CLOSE_FAILED;
+	}
+	dir->pos = 0;
+	dir->fs = NULL;
+
+	return SFFS_DIRECTORY_CLOSE_OK;
+}
+
+
+int32_t sffs_directory_get_item(struct sffs_directory *dir, char *name, uint32_t max_len) {
+	if (u_assert(dir != NULL && name != NULL && max_len > 0)) {
+		return SFFS_DIRECTORY_GET_ITEM_FAILED;
+	}
+
+	/* Try to read directory entry from the current position. */
+	sffs_seek(&(dir->fs->root_dir), dir->pos * sizeof(struct sffs_dir_item));
+	struct sffs_dir_item item;
+	while (sffs_read(&(dir->fs->root_dir), (uint8_t *)&item, sizeof(struct sffs_dir_item)) > 0) {
+		dir->pos++;
+		/* Go to next item if this one is not used. */
+		if (item.state != SFFS_DIR_ITEM_STATE_USED) {
+			continue;
+		} else {
+			strlcpy(name, item.file_name, max_len);
+			return SFFS_DIRECTORY_GET_ITEM_OK;
+		}
+	}
+	return SFFS_DIRECTORY_GET_ITEM_FAILED;
 }

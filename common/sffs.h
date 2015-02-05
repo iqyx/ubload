@@ -43,6 +43,11 @@ struct sffs_file {
 	struct sffs *fs;
 };
 
+struct sffs_directory {
+	uint32_t pos;
+	struct sffs *fs;
+};
+
 enum sffs_dir_item_state {
 	SFFS_DIR_ITEM_STATE_FREE,
 	SFFS_DIR_ITEM_STATE_USED,
@@ -498,12 +503,12 @@ int32_t sffs_seek(struct sffs_file *f, uint32_t pos);
  *
  * @param fs A SFFS filesystem.
  *
- * @return SFFS_FILE_REMOVE_OK on success or
- *         SFFS_FILE_REMOVE_FAILED otherise.
+ * @return SFFS_FILE_REMOVE_ID_OK on success or
+ *         SFFS_FILE_REMOVE_ID_FAILED otherise.
  */
-int32_t sffs_file_remove(struct sffs *fs, struct sffs_file *f);
-#define SFFS_FILE_REMOVE_OK 0
-#define SFFS_FILE_REMOVE_FAILED -1
+int32_t sffs_file_remove_id(struct sffs *fs, uint32_t file_id);
+#define SFFS_FILE_REMOVE_ID_OK 0
+#define SFFS_FILE_REMOVE_ID_FAILED -1
 
 /**
  * Compute size of specified file.
@@ -530,8 +535,25 @@ int32_t sffs_add_file_name(struct sffs *fs, const char *fname, uint32_t *id);
 #define SFFS_ADD_FILE_NAME_OK 0
 #define SFFS_ADD_FILE_NAME_FAILED -1
 
+int32_t sffs_file_remove(struct sffs *fs, const char *name);
+#define SFFS_FILE_REMOVE_OK 0
+#define SFFS_FILE_REMOVE_FAILED -1
+
 int32_t sffs_open(struct sffs *fs, struct sffs_file *f, const char *fname, uint32_t mode);
 #define SFFS_OPEN_OK 0
 #define SFFS_OPEN_FAILED -1
+
+int32_t sffs_directory_open(struct sffs *fs, struct sffs_directory *dir, const char *path);
+#define SFFS_DIRECTORY_OPEN_OK 0
+#define SFFS_DIRECTORY_OPEN_FAILED -1
+
+int32_t sffs_directory_close(struct sffs_directory *dir);
+#define SFFS_DIRECTORY_CLOSE_OK 0
+#define SFFS_DIRECTORY_CLOSE_FAILED -1
+
+int32_t sffs_directory_get_item(struct sffs_directory *dir, char *name, uint32_t max_len);
+#define SFFS_DIRECTORY_GET_ITEM_OK 0
+#define SFFS_DIRECTORY_GET_ITEM_FAILED -1
+
 
 #endif

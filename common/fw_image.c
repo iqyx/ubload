@@ -37,6 +37,7 @@
 #include "sha512.h"
 #include "edsign.h"
 #include "pubkey_storage.h"
+#include "sffs.h"
 
 
 int32_t fw_image_init(struct fw_image *fw, void *base, uint8_t base_sector, uint8_t sectors) {
@@ -444,4 +445,77 @@ int32_t fw_image_authenticate(struct fw_image *fw) {
 		fw->authenticated = false;
 		return FW_IMAGE_AUTHENTICATE_FAILED;
 	}
+}
+
+
+int32_t fw_image_get_size(struct fw_image *fw, uint32_t *size) {
+	if (u_assert(fw != NULL && size != NULL)) {
+		return FW_IMAGE_GET_SIZE_FAILED;
+	}
+
+	/* Firmware image must be parsed first. */
+	if (main_fw.parsed == false) {
+		if (fw_image_parse(&main_fw) != FW_IMAGE_PARSE_OK) {
+			return FW_IMAGE_GET_SIZE_FAILED;
+		}
+	}
+
+	*size = fw->verified_section.len + fw->verification_section.len + 16;
+	return FW_IMAGE_GET_SIZE_OK;
+}
+
+
+int32_t fw_image_dump_file(struct fw_image *fw, struct sffs *fs, const char *fname) {
+	if (u_assert(fw != NULL && fs != NULL && fname != NULL)) {
+		return FW_IMAGE_DUMP_FILE_FAILED;
+	}
+
+	/* Firmware image must be parsed first. */
+	if (main_fw.parsed == false) {
+		if (fw_image_parse(&main_fw) != FW_IMAGE_PARSE_OK) {
+			return FW_IMAGE_DUMP_FILE_FAILED;
+		}
+	}
+	uint32_t size = 0;
+	fw_image_get_size(&main_fw, &size);
+
+	/* Prepare the output file. */
+	struct sffs_file f;
+	if (sffs_open(fs, &f, fname, SFFS_OVERWRITE) != SFFS_OPEN_OK) {
+		return FW_IMAGE_DUMP_FILE_FAILED;
+	}
+
+	if (fw->progress_callback != NULL) {
+		fw->progress_callback(0, size, fw->progress_callback_ctx);
+	}
+	int32_t len = 0;
+	uint32_t offset = 0;
+	uint32_t update = 0;
+	while (offset < size) {
+		len = 512;
+		if ((size - offset) < (uint32_t)len) {
+			len = size - offset;
+		}
+		len = sffs_write(&f, (unsigned char *)(fw->base + offset), (uint32_t)len);
+		if (len < 0) {
+			break;
+		}
+		offset += len;
+		update += len;
+
+		if (update >= 1024) {
+			if (fw->progress_callback != NULL) {
+				fw->progress_callback(offset, size, fw->progress_callback_ctx);
+			}
+			update = 0;
+		}
+	}
+	if (fw->progress_callback != NULL) {
+		fw->progress_callback(size, size, fw->progress_callback_ctx);
+	}
+
+	sffs_close(&f);
+	u_log(system_log, LOG_TYPE_INFO, "Current firmware saved to file %s (size %u bytes)", fname, size);
+
+	return FW_IMAGE_DUMP_FILE_OK;
 }

@@ -206,5 +206,13 @@ int32_t fw_image_authenticate(struct fw_image *fw);
 #define FW_IMAGE_AUTHENTICATE_OK 0
 #define FW_IMAGE_AUTHENTICATE_FAILED -1
 
+int32_t fw_image_get_size(struct fw_image *fw, uint32_t *size);
+#define FW_IMAGE_GET_SIZE_OK 0
+#define FW_IMAGE_GET_SIZE_FAILED -1
+
+int32_t fw_image_dump_file(struct fw_image *fw, struct sffs *fs, const char *fname);
+#define FW_IMAGE_DUMP_FILE_OK 0
+#define FW_IMAGE_DUMP_FILE_FAILED -1
+
 #endif
 

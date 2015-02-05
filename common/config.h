@@ -25,6 +25,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define CONFIG_FIRMWARE_ID_LEN 32
+
 /**
  * This file contains all configuration variables which are supported by uBLoad.
  * Config options are initialized during the bootloader initialization and can
@@ -89,6 +91,8 @@ struct ubload_config {
 	uint32_t xmodem_retry_count;
 	uint32_t xmodem_timeout;
 
+	char fw_working[CONFIG_FIRMWARE_ID_LEN];
+	char fw_request[CONFIG_FIRMWARE_ID_LEN];
 };
 
 

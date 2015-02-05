@@ -248,37 +248,11 @@ int32_t cli_cmd_program_file(struct cli *c, char *file) {
 		return CLI_CMD_PROGRAM_FILE_FAILED;
 	}
 
-	struct sffs_file f;
-	if (sffs_open(&flash_fs, &f, file, SFFS_READ) != SFFS_OPEN_OK) {
-		cli_print(c, "Cannot open firmware file.\r\n");
-		return CLI_CMD_PROGRAM_FILE_FAILED;
-	}
-
-	cli_print(c, "Calculating file size...\r\n");
-	uint32_t size = 0;
-	sffs_file_size(&flash_fs, &f, &size);
-
 	char s[80];
-	snprintf(s, sizeof(s), "Flashing firmware %s, size %u bytes\r\n", file, (unsigned int)(size));
+	snprintf(s, sizeof(s), "Flashing firmware %s\r\n", file);
 	cli_print(c, s);
-
-	cli_progress_callback(0, size, (void *)c);
-	int32_t len = 0;
-	uint32_t offset = 0;
-	uint32_t update = 0;
-	uint8_t buf[128];
-	while ((len = sffs_read(&f, buf, sizeof(buf))) > 0) {
-		fw_image_program(&main_fw, offset, buf, len);
-		offset += len;
-		update += len;
-
-		if (update >= 1024) {
-			cli_progress_callback(offset, size, (void *)c);
-			update = 0;
-		}
-	}
-	sffs_close(&f);
-	cli_print(c, "\r\n");
+	fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)c);
+	fw_image_program_file(&main_fw, &flash_fs, file);
 
 	return CLI_CMD_PROGRAM_FILE_OK;
 }
@@ -516,6 +490,12 @@ int32_t cli_cmd_config_print_key(struct cli *c, const char *key) {
 	if (!strcmp(key, "host")) {
 		snprintf(s, sizeof(s), "'%s'", running_config.host);
 	}
+	if (!strcmp(key, "fw-working")) {
+		snprintf(s, sizeof(s), "'%s'", running_config.fw_working);
+	}
+	if (!strcmp(key, "fw-request")) {
+		snprintf(s, sizeof(s), "'%s'", running_config.fw_request);
+	}
 
 	if (s[0] != '\0') {
 		cli_print(c, key);
@@ -538,6 +518,8 @@ int32_t cli_cmd_config_print_all(struct cli *c) {
 	}
 
 	cli_cmd_config_print_key(c, "host");
+	cli_cmd_config_print_key(c, "fw-working");
+	cli_cmd_config_print_key(c, "fw-request");
 
 	return CLI_CMD_CONFIG_PRINT_ALL_OK;
 }
@@ -550,6 +532,14 @@ int32_t cli_cmd_config_set(struct cli *c, const char *key, const char *value) {
 
 	if (!strcmp(key, "host")) {
 		strlcpy(running_config.host, value, sizeof(running_config.host));
+		return CLI_CMD_CONFIG_SET_OK;
+	}
+	if (!strcmp(key, "fw-working")) {
+		strlcpy(running_config.fw_working, value, sizeof(running_config.fw_working));
+		return CLI_CMD_CONFIG_SET_OK;
+	}
+	if (!strcmp(key, "fw-request")) {
+		strlcpy(running_config.fw_request, value, sizeof(running_config.fw_request));
 		return CLI_CMD_CONFIG_SET_OK;
 	}
 

@@ -37,6 +37,7 @@ const struct ubload_config default_config = {
 	.watchdog_enabled = false,
 	.xmodem_retry_count = 30,
 	.xmodem_timeout = 1000,
-
+	.fw_working = "",
+	.fw_request = "",
 };
 

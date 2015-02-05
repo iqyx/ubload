@@ -214,5 +214,10 @@ int32_t fw_image_dump_file(struct fw_image *fw, struct sffs *fs, const char *fna
 #define FW_IMAGE_DUMP_FILE_OK 0
 #define FW_IMAGE_DUMP_FILE_FAILED -1
 
+int32_t fw_image_program_file(struct fw_image *fw, struct sffs *fs, const char *fname);
+#define FW_IMAGE_PROGRAM_FILE_OK 0
+#define FW_IMAGE_PROGRAM_FILE_FAILED -1
+
+
 #endif
 

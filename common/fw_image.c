@@ -151,8 +151,6 @@ int32_t fw_image_program(struct fw_image *fw, uint32_t offset, uint8_t *data, ui
 	flash_program((uint32_t)fw->base + offset, data, len);
 	flash_lock();
 
-	fw_image_init(fw, fw->base, fw->base_sector, fw->sectors);
-
 	return FW_IMAGE_PROGRAM_OK;
 }
 
@@ -515,7 +513,52 @@ int32_t fw_image_dump_file(struct fw_image *fw, struct sffs *fs, const char *fna
 	}
 
 	sffs_close(&f);
-	u_log(system_log, LOG_TYPE_INFO, "Current firmware saved to file %s (size %u bytes)", fname, size);
+	u_log(system_log, LOG_TYPE_INFO, "fw_image: current firmware saved to file %s (size %u bytes)", fname, size);
 
 	return FW_IMAGE_DUMP_FILE_OK;
+}
+
+
+int32_t fw_image_program_file(struct fw_image *fw, struct sffs *fs, const char *fname) {
+	if (u_assert(fw != NULL && fs != NULL && fname != NULL)) {
+		return FW_IMAGE_PROGRAM_FILE_FAILED;
+	}
+
+	struct sffs_file f;
+	if (sffs_open(fs, &f, fname, SFFS_READ) != SFFS_OPEN_OK) {
+		return FW_IMAGE_PROGRAM_FILE_FAILED;
+	}
+
+	uint32_t size = 0;
+	sffs_file_size(fs, &f, &size);
+
+	if (fw->progress_callback != NULL) {
+		fw->progress_callback(0, size, fw->progress_callback_ctx);
+	}
+	u_assert(fw->progress_callback != NULL);
+	int32_t len = 0;
+	uint32_t offset = 0;
+	uint32_t update = 0;
+	uint8_t buf[128];
+	while ((len = sffs_read(&f, buf, sizeof(buf))) > 0) {
+		fw_image_program(fw, offset, buf, len);
+		offset += len;
+		update += len;
+
+		if (update >= 1024) {
+			u_assert(fw->progress_callback != NULL);
+			if (fw->progress_callback != NULL) {
+				fw->progress_callback(offset, size, fw->progress_callback_ctx);
+			}
+			update = 0;
+		}
+	}
+	if (fw->progress_callback != NULL) {
+		fw->progress_callback(size, size, fw->progress_callback_ctx);
+	}
+	sffs_close(&f);
+	fw_image_init(fw, fw->base, fw->base_sector, fw->sectors);
+	u_log(system_log, LOG_TYPE_INFO, "fw_image: programmed firmware from file %s (size %u bytes)", fname, size);
+
+	return FW_IMAGE_PROGRAM_FILE_OK;
 }

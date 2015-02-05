@@ -220,7 +220,7 @@ static void ubload_watchdog_init(void) {
 static void ubload_boot(void) __attribute__((noreturn));
 static void ubload_boot(void) {
 	if (running_config.cli_enabled) {
-		u_log(system_log, LOG_TYPE_INFO, "Jumping to user code");
+		u_log(system_log, LOG_TYPE_INFO, "ubload: jumping to user code");
 	}
 	fw_image_jump(&main_fw);
 
@@ -236,9 +236,50 @@ static void ubload_boot(void) {
 #define UBLOAD_CHECK_FW_OK 0
 #define UBLOAD_CHECK_FW_FAILED -1
 static int32_t ubload_check_fw(void) {
-	/* u_log(system_log, LOG_TYPE_WARN, "Wrong firmware loaded, performing fallback."); */
+	/* TODO: rename fw_request to fw_request */
+	/* Check if a new firmware programming is requested. */
+	if (strcmp("", running_config.fw_request)) {
 
-	/* Bypass this check for now. */
+		if (strcmp("backup.fw", running_config.fw_request)) {
+			/* Make backup firmware only if we are not flashing the backup itself. */
+			u_log(system_log, LOG_TYPE_INFO, "ubload: new firmware requested, doing current firmware backup...");
+			if (running_config.cli_enabled) {
+				fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)&console_cli);
+			}
+			if (fw_image_dump_file(&main_fw, &flash_fs, "backup.fw") != FW_IMAGE_DUMP_FILE_OK) {
+				u_log(system_log, LOG_TYPE_WARN, "ubload: cannot backup current firmware");
+			}
+		}
+
+		u_log(system_log, LOG_TYPE_INFO, "ubload: programming requested firmware '%s'", running_config.fw_request);
+		if (running_config.cli_enabled) {
+			fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)&console_cli);
+		}
+		fw_image_erase(&main_fw);
+		if (running_config.cli_enabled) {
+			fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)&console_cli);
+		}
+		fw_image_program_file(&main_fw, &flash_fs, running_config.fw_request);
+
+		/* If a backup firmware was programmed, erase it. */
+		if (!strcmp("backup.fw", running_config.fw_request)) {
+			sffs_file_remove(&flash_fs, "backup.fw");
+		}
+
+		strlcpy(running_config.fw_request, "", sizeof(running_config.fw_request));
+		/* Save running configuration before reset. */
+		/* TODO: move away */
+		struct sffs_file f;
+		if (sffs_open(&flash_fs, &f, "ubload.cfg", SFFS_OVERWRITE) != SFFS_OPEN_OK) {
+			return UBLOAD_CHECK_FW_FAILED;
+		}
+		if (sffs_write(&f, (uint8_t *)&running_config, sizeof(running_config)) != sizeof(running_config)) {
+			u_log(system_log, LOG_TYPE_ERROR, "config: error saving the configuration");
+			return UBLOAD_CHECK_FW_FAILED;
+		}
+		sffs_close(&f);
+	}
+
 	return UBLOAD_CHECK_FW_OK;
 }
 
@@ -255,15 +296,57 @@ static int32_t ubload_authenticate(void) {
 	}
 
 	if (fw_image_verify(&main_fw) != FW_IMAGE_VERIFY_OK) {
-		u_log(system_log, LOG_TYPE_CRIT, "Required firmware verification failed, requesting reset.");
+		u_log(system_log, LOG_TYPE_CRIT, "ubload: required firmware verification failed");
 		return UBLOAD_AUTHENTICATE_FAILED;
 	}
 
 	if (fw_image_authenticate(&main_fw) != FW_IMAGE_AUTHENTICATE_OK) {
-		u_log(system_log, LOG_TYPE_CRIT, "Required firmware authentication failed, requesting reset.");
+		u_log(system_log, LOG_TYPE_CRIT, "ubload: required firmware authentication failed");
 		return UBLOAD_AUTHENTICATE_FAILED;
 	}
 	return UBLOAD_AUTHENTICATE_OK;
+}
+
+/*******************************************************************************
+ * Firmware fallback if something is wrong
+ ******************************************************************************/
+static void ubload_request_last(void) {
+	if (running_config.cli_enabled) {
+		fw_image_set_progress_callback(&main_fw, cli_progress_callback, (void *)&console_cli);
+	}
+
+	u_log(system_log, LOG_TYPE_INFO, "ubload: doing fallback");
+	/* First we check if there is some known working firmware saved.
+	 * Request this firmware in this case. */
+	if (strcmp("", running_config.fw_working)) {
+		u_log(system_log, LOG_TYPE_WARN, "ubload: requesting last working firmware");
+		strlcpy(running_config.fw_request, running_config.fw_working, sizeof(running_config.fw_request));
+	} else {
+		/* No known working firmware, try to use backup. */
+		struct sffs_file f;
+		if (sffs_open(&flash_fs, &f, "backup.fw", SFFS_READ) == SFFS_OPEN_OK) {
+			sffs_close(&f);
+			u_log(system_log, LOG_TYPE_WARN, "ubload: requesting backup firmware");
+			strlcpy(running_config.fw_request, "backup.fw", sizeof(running_config.fw_request));
+
+		} else {
+			/* No backup available. */
+			u_log(system_log, LOG_TYPE_CRIT, "ubload: no fallback possible");
+			return;
+		}
+	}
+
+	/* Save running configuration before reset. */
+	/* TODO: move away */
+	struct sffs_file f;
+	if (sffs_open(&flash_fs, &f, "ubload.cfg", SFFS_OVERWRITE) != SFFS_OPEN_OK) {
+		return;
+	}
+	if (sffs_write(&f, (uint8_t *)&running_config, sizeof(running_config)) != sizeof(running_config)) {
+		u_log(system_log, LOG_TYPE_ERROR, "config: error saving the configuration");
+		return;
+	}
+	sffs_close(&f);
 }
 
 
@@ -287,10 +370,8 @@ int main(void) {
 	ubload_cli();
 
 	if (ubload_check_fw() != UBLOAD_CHECK_FW_OK || ubload_authenticate() != UBLOAD_AUTHENTICATE_OK) {
+		ubload_request_last();
 
-		/* TODO: flash here if bad header is found or firmware integrity check
-		 * failed or authentication failed */
-		/* TODO: reboot here after firmware flashing */
 		timer_wait_ms(2000);
 		fw_image_reset(&main_fw);
 

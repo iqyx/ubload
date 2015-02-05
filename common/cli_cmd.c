@@ -337,18 +337,10 @@ int32_t cli_cmd_fs_delete(struct cli *c, char *file) {
 		return CLI_CMD_FS_DELETE_FAILED;
 	}
 
-	struct sffs_file f;
-	if (sffs_open(&flash_fs, &f, file, SFFS_READ) != SFFS_OPEN_OK) {
-		cli_print(c, "Cannot find requested file.\r\n");
-		return CLI_CMD_FS_DELETE_FAILED;
-	}
-
-	if (sffs_file_remove(&flash_fs, &f) == SFFS_FILE_REMOVE_OK) {
-		sffs_close(&f);
+	if (sffs_file_remove(&flash_fs, file) == SFFS_FILE_REMOVE_OK) {
 		cli_print(c, "File deleted successfully.\r\n");
 		return CLI_CMD_FS_DELETE_OK;
 	} else {
-		sffs_close(&f);
 		cli_print(c, "File deletion failed.\r\n");
 		return CLI_CMD_FS_DELETE_FAILED;
 	}
@@ -650,6 +642,27 @@ int32_t cli_cmd_config_load(struct cli *c) {
 	sffs_close(&f);
 
 	return CLI_CMD_CONFIG_LOAD_OK;
+}
+
+
+int32_t cli_cmd_fs_list(struct cli *c) {
+	if (u_assert(c != NULL)) {
+		return CLI_CMD_FS_LIST_FAILED;
+	}
+
+	struct sffs_directory dir;
+	if (sffs_directory_open(&flash_fs, &dir, "") != SFFS_DIRECTORY_OPEN_OK) {
+		return CLI_CMD_FS_LIST_FAILED;
+	}
+
+	char name[50];
+	while (sffs_directory_get_item(&dir, name, sizeof(name)) == SFFS_DIRECTORY_GET_ITEM_OK) {
+		cli_print(c, name);
+		cli_print(c, "\r\n");
+	}
+
+	sffs_directory_close(&dir);
+	return CLI_CMD_FS_LIST_FAILED;
 }
 
 

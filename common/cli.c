@@ -341,6 +341,9 @@ int32_t cli_execute(struct cli *c, uint32_t argc, char *argv[]) {
 			if (!strcmp(argv[1], "format")) {
 				cli_cmd_fs_format(c);
 			}
+			if (!strcmp(argv[1], "list")) {
+				cli_cmd_fs_list(c);
+			}
 		}
 		return CLI_EXECUTE_OK;
 	}

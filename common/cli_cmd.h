@@ -123,6 +123,10 @@ int32_t cli_cmd_config_load(struct cli *c);
 #define CLI_CMD_CONFIG_LOAD_OK 0
 #define CLI_CMD_CONFIG_LOAD_FAILED -1
 
+int32_t cli_cmd_fs_list(struct cli *c);
+#define CLI_CMD_FS_LIST_OK 0
+#define CLI_CMD_FS_LIST_FAILED -1
+
 
 #endif
 

@@ -189,8 +189,6 @@ int32_t flash_block_erase(struct flash_dev *flash, const uint32_t addr) {
 		return FLASH_BLOCK_ERASE_FAILED;
 	}
 
-	u_log(system_log, LOG_TYPE_DEBUG, "spi_flash: erasing block at address 0x%08x", addr);
-
 	flash_write_enable(flash, true);
 
 	gpio_clear(flash->cs_port, 1 << flash->cs_pin);
@@ -211,8 +209,6 @@ int32_t flash_sector_erase(struct flash_dev *flash, const uint32_t addr) {
 	if (u_assert(flash != NULL)) {
 		return FLASH_SECTOR_ERASE_FAILED;
 	}
-
-	u_log(system_log, LOG_TYPE_DEBUG, "spi_flash: erasing sector at address 0x%08x", addr);
 
 	flash_write_enable(flash, true);
 

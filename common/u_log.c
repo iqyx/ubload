@@ -42,7 +42,7 @@ int32_t u_log_init(void) {
 	system_log = (struct log_cbuffer *)clog_pos;
 	uint8_t *log_data = (uint8_t *)(clog_pos + sizeof(struct log_cbuffer));
 
-	log_cbuffer_init(system_log, log_data, PORT_CLOG_SIZE - sizeof(struct log_cbuffer *));
+	log_cbuffer_init(system_log, log_data, PORT_CLOG_SIZE - sizeof(struct log_cbuffer));
 
 	return U_LOG_INIT_OK;
 }

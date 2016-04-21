@@ -13,6 +13,8 @@ class section_magic:
 	sha512 = 0xb6eb9721
 	ed25519 = 0x9d6b1a99
 	fp = 0x5bf0aa39
+	version = 0x44ed31be
+	compatibility = 0x3a1e112b
 
 section_names = {
 	section_magic.verification: "verification",
@@ -22,6 +24,8 @@ section_names = {
 	section_magic.sha512: "sha512 hash",
 	section_magic.ed25519: "ed25519 signature",
 	section_magic.fp: "pubkey fingerprint",
+	section_magic.version: "firmware version",
+	section_magic.compatibility: "hardware compatibility"
 }
 
 def build_section(section_magic, data):
@@ -115,13 +119,35 @@ parser.add_argument(
 	default = "0x400",
 	help = "Offset of the vector table inside the image."
 )
+parser.add_argument(
+	"--version", "-v",
+	metavar = "V",
+	dest = "version",
+	type = str,
+	help = "Version of the firmware image"
+)
+parser.add_argument(
+	"--compatibility",
+	dest = "compatibility",
+	metavar = "C",
+	action = "append",
+	type = str,
+	help = "Hardware compatiblity string"
+)
 args = parser.parse_args()
+
 
 # Initialize two required sections
 fw_verified = ""
 fw_verification = ""
 
 # TODO: populate verified section metadata here
+if args.version:
+	fw_verified += build_section(section_magic.version, args.version)
+
+if args.compatibility:
+	for c in args.compatibility:
+		fw_verified += build_section(section_magic.compatibility, c)
 
 # Verified section header is exactly 8 bytes long, firmware image header has the
 # same length. Therefore, verified data must be fw_offset - 16 bytes long. Print

@@ -65,6 +65,11 @@ struct flash_dev flash1;
 struct sffs flash_fs; /* TODO: cannot be static, CLI uses it */
 
 static void ubload_flash_init(void) {
+	if (PORT_SPI_FLASH == false) {
+		u_log(system_log, LOG_TYPE_WARN, "flash: no SPI flash memory enabled");
+		return;
+	}
+
 	flash_init(&flash1, PORT_SPI_FLASH_PORT, PORT_SPI_FLASH_CS_PORT, PORT_SPI_FLASH_CS_PIN);
 
 	/* TODO: do this only if invalid flash data found. */

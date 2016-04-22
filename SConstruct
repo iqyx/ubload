@@ -86,6 +86,29 @@ env.Append(CPPPATH = [Dir("lineedit")])
 objs.append(env.Object(source = [File(Glob("crypto/*.c"))]))
 env.Append(CPPPATH = [Dir("crypto")])
 
+# Add qdl library
+objs.append(env.Object(source = [File(Glob("qdl/*.c"))]))
+env.Append(CPPPATH = [Dir("qdl")])
+
+# Add FreeRTOS (port specific sources must be added in the platform SConscript)
+objs.append(env.Object(source = [File(Glob("freertos/*.c"))]))
+objs.append(env.Object(source = [File(Glob("freertos/portable/%s/*.c" % env["FREERTOS_PORT"]))]))
+objs.append(env.Object(source = [File("freertos/portable/MemMang/heap_3.c")]))
+env.Append(CPPPATH = [Dir("freertos/include")])
+env.Append(CPPPATH = [Dir("freertos/portable/%s" % env["FREERTOS_PORT"])])
+
+# Add uMeshFw HAL
+env.Append(CPPPATH = [
+	Dir("hal/common"),
+	Dir("hal/modules"),
+	Dir("hal/interfaces"),
+])
+objs.append(env.Object(source = [
+	File(Glob("hal/common/*.c")),
+	File(Glob("hal/modules/*.c")),
+	File(Glob("hal/interfaces/*.c")),
+]))
+
 env.Append(LINKFLAGS = [
 	env["CFLAGS"],
 	"--static",
@@ -139,7 +162,7 @@ print cformat("\ttoolchain = %s" % env["TOOLCHAIN"])
 print ""
 
 # link the whole thing
-elf = env.Program(source = objs, target = "ubload_%s.elf" % env["PLATFORM"], LIBS = [env["LIBOCM3"], "c", "gcc", "nosys"])
+elf = env.Program(source = objs, target = "ubload_%s.elf" % env["PLATFORM"], LIBS = [env["LIBOCM3"], "c", "gcc", "nosys", "m"])
 
 env.Append(BUILDERS = {"MakeVer": env.Builder(action = make_ver)})
 version = env.MakeVer(target = "platforms/%s/version.h" % env["PLATFORM"], source = None)

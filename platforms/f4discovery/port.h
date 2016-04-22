@@ -70,7 +70,24 @@
 #define PORT_SPI_FLASH_CS_PORT     GPIOB
 #define PORT_SPI_FLASH_CS_PIN      12
 
+/* Display configuration */
+#define PORT_DISPLAY                 true
+#define PORT_DISPLAY_DATA_PORT       GPIOE
+#define PORT_DISPLAY_DATA_PORT_MASK  GPIO8 | GPIO9 | GPIO10 | GPIO11 | GPIO12 | GPIO13 | GPIO14 | GPIO15
+#define PORT_DISPLAY_DATA_PORT_SHIFT 8
+#define PORT_DISPLAY_CS_PORT         GPIOD
+#define PORT_DISPLAY_CS_PIN          GPIO8
+#define PORT_DISPLAY_RD_PORT         GPIOD
+#define PORT_DISPLAY_RD_PIN          GPIO11
+#define PORT_DISPLAY_WR_PORT         GPIOD
+#define PORT_DISPLAY_WR_PIN          GPIO10
+#define PORT_DISPLAY_RST_PORT        GPIOE
+#define PORT_DISPLAY_RST_PIN         GPIO7
+#define PORT_DISPLAY_A0_PORT         GPIOD
+#define PORT_DISPLAY_A0_PIN          GPIO9
 
+
+extern struct module_led led1;
 
 
 int32_t port_mcu_init(void);
@@ -80,6 +97,17 @@ int32_t port_mcu_init(void);
 int32_t port_gpio_init(void);
 #define PORT_GPIO_INIT_OK 0
 #define PORT_GPIO_INIT_FAILED -1
+
+int32_t port_early_init(void);
+#define PORT_EARLY_INIT_OK 0
+#define PORT_EARLY_INIT_FAILED -1
+
+int32_t port_module_init(void);
+#define PORT_MODULE_INIT_OK 0
+#define PORT_MODULE_INIT_FAILED -1
+
+void port_task_timer_init(void);
+uint32_t port_task_timer_get_value(void);
 
 #endif
 

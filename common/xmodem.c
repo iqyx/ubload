@@ -26,7 +26,6 @@
 
 #include "config.h"
 #include "xmodem.h"
-#include "timer.h"
 
 
 int32_t xmodem_init(struct xmodem *x, uint32_t console) {
@@ -62,16 +61,16 @@ int32_t xmodem_recv_packet(struct xmodem *x, uint8_t *data) {
 
 	/* Capture actual system time as a base for packet timeout. */
 	uint32_t start_time;
-	timer_timeout_start(&start_time);
+	//~ timer_timeout_start(&start_time);
 
 	/* TODO: this part is meh. */
 	/* Wait for SOH character */
 	chr = 0;
 	while (chr != XMODEM_SOH) {
 		while (!usart_get_flag(x->console, USART_SR_RXNE)) {
-			if (!timer_timeout_check(start_time, x->packet_timeout)) {
-				return XMODEM_RECV_PACKET_TIMEOUT;
-			}
+			//~ if (!timer_timeout_check(start_time, x->packet_timeout)) {
+				//~ return XMODEM_RECV_PACKET_TIMEOUT;
+			//~ }
 		}
 		chr = usart_recv(x->console);
 
@@ -89,16 +88,16 @@ int32_t xmodem_recv_packet(struct xmodem *x, uint8_t *data) {
 
 	/* Wait for packet number and inverse packet number. */
 	while (!usart_get_flag(x->console, USART_SR_RXNE)) {
-		if (!timer_timeout_check(start_time, x->packet_timeout)) {
-			return XMODEM_RECV_PACKET_TIMEOUT;
-		}
+		//~ if (!timer_timeout_check(start_time, x->packet_timeout)) {
+			//~ return XMODEM_RECV_PACKET_TIMEOUT;
+		//~ }
 	}
 	uint16_t pkt = usart_recv(x->console);
 
 	while (!usart_get_flag(x->console, USART_SR_RXNE)) {
-		if (!timer_timeout_check(start_time, x->packet_timeout)) {
-			return XMODEM_RECV_PACKET_TIMEOUT;
-		}
+		//~ if (!timer_timeout_check(start_time, x->packet_timeout)) {
+			//~ return XMODEM_RECV_PACKET_TIMEOUT;
+		//~ }
 	}
 	uint16_t pkti = usart_recv(x->console);
 
@@ -113,9 +112,9 @@ int32_t xmodem_recv_packet(struct xmodem *x, uint8_t *data) {
 	uint32_t checksum_computed = 0;
 	for (uint32_t i = 0; i < 128; i++) {
 		while (!usart_get_flag(x->console, USART_SR_RXNE)) {
-			if (!timer_timeout_check(start_time, x->packet_timeout)) {
-				return XMODEM_RECV_PACKET_TIMEOUT;
-			}
+			//~ if (!timer_timeout_check(start_time, x->packet_timeout)) {
+				//~ return XMODEM_RECV_PACKET_TIMEOUT;
+			//~ }
 		}
 		data[i] = usart_recv(x->console);
 		checksum_computed += data[i];
@@ -124,9 +123,9 @@ int32_t xmodem_recv_packet(struct xmodem *x, uint8_t *data) {
 
 	/* Read packet checksum. */
 	while (!usart_get_flag(x->console, USART_SR_RXNE)) {
-		if (!timer_timeout_check(start_time, x->packet_timeout)) {
-			return XMODEM_RECV_PACKET_TIMEOUT;
-		}
+		//~ if (!timer_timeout_check(start_time, x->packet_timeout)) {
+			//~ return XMODEM_RECV_PACKET_TIMEOUT;
+		//~ }
 	}
 	uint8_t checksum = usart_recv(x->console);
 

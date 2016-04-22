@@ -31,7 +31,7 @@
 #include "u_assert.h"
 #include "u_log.h"
 #include "config.h"
-#include "config_port.h"
+#include "port.h"
 #include "fw_image.h"
 #include "cli.h"
 #include "sha512.h"

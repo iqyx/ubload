@@ -31,7 +31,6 @@
 #include "u_assert.h"
 #include "u_log.h"
 #include "spi_flash.h"
-#include "timer.h"
 
 
 int32_t flash_init(struct flash_dev *flash, uint32_t spi, uint32_t cs_port, uint8_t cs_pin) {

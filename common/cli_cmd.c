@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 #include "config.h"
-#include "config_port.h"
+#include "port.h"
 #include "u_log.h"
 #include "u_assert.h"
 #include "cli.h"

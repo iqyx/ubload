@@ -28,12 +28,11 @@
 #include <libopencm3/stm32/usart.h>
 
 #include "config.h"
-#include "config_port.h"
+#include "port.h"
 #include "u_log.h"
 #include "u_assert.h"
 #include "cli.h"
 #include "cli_cmd.h"
-#include "timer.h"
 #include "lineedit.h"
 #include "fw_image.h"
 
@@ -103,7 +102,7 @@ int32_t cli_wait_keypress(struct cli *c) {
 			}
 		}
 		cli_print(c, ".");
-		timer_wait_ms(200);
+		vTaskDelay(200);
 	}
 
 	return CLI_WAIT_KEYPRESS_SKIP;
@@ -118,8 +117,8 @@ int32_t cli_run(struct cli *c) {
 	while (1) {
 
 		/* Capture systick to measure time without keypress. */
-		uint32_t last_keypress;
-		timer_timeout_start(&last_keypress);
+		//~ uint32_t last_keypress;
+		//~ timer_timeout_start(&last_keypress);
 
 		/* Do for every single line. */
 		lineedit_clear(&(c->le));
@@ -128,12 +127,12 @@ int32_t cli_run(struct cli *c) {
 			/* TODO: insert timeout here, exit with reset on timeout. */
 			/* Wait for single character or break on timeout. */
 			while (!usart_get_flag(c->console, USART_SR_RXNE)) {
-				if (!timer_timeout_check(last_keypress, running_config.idle_time * 1000)) {
-					return CLI_RUN_TIMEOUT;
-				}
+				//~ if (!timer_timeout_check(last_keypress, running_config.idle_time * 1000)) {
+					//~ return CLI_RUN_TIMEOUT;
+				//~ }
 			}
 			uint16_t chr = usart_recv(c->console);
-			timer_timeout_start(&last_keypress);
+			//~ timer_timeout_start(&last_keypress);
 
 			int32_t res = lineedit_keypress(&(c->le), chr);
 

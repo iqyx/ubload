@@ -90,6 +90,10 @@ env.Append(CPPPATH = [Dir("crypto")])
 objs.append(env.Object(source = [File(Glob("qdl/*.c"))]))
 env.Append(CPPPATH = [Dir("qdl")])
 
+# Add user interfaces
+objs.append(env.Object(source = [File(Glob("ui/*.c"))]))
+env.Append(CPPPATH = [Dir("ui")])
+
 # Add FreeRTOS (port specific sources must be added in the platform SConscript)
 objs.append(env.Object(source = [File(Glob("freertos/*.c"))]))
 objs.append(env.Object(source = [File(Glob("freertos/portable/%s/*.c" % env["FREERTOS_PORT"]))]))

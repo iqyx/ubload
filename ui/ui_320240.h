@@ -1,7 +1,7 @@
 /*
- * uMeshFw display interface
+ * uBLoad user interface for 320x240 pixel displays
  *
- * Copyright (C) 2015-2016, Marek Koza, qyx@krtko.org
+ * Copyright (C) 2016, Marek Koza, qyx@krtko.org
  *
  * This file is part of uMesh node firmware (http://qyx.krtko.org/projects/umesh)
  *
@@ -21,30 +21,23 @@
 
 #pragma once
 
-#include "hal_interface.h"
-#include "qdl_primitives.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-struct interface_display_vmt {
-	int32_t (*set_screen)(void *context, qdlWidget *screen);
-	void *context;
+#include "interface_display.h"
+
+/** @todo configuration */
+
+
+struct ui_320240 {
+
+	struct interface_display *display;
+	/** @todo event manager dependency */
 };
 
-struct interface_display {
-	struct hal_interface_descriptor descriptor;
 
-	struct interface_display_vmt vmt;
-
-};
-
-
-int32_t interface_display_init(struct interface_display *self);
-#define INTERFACE_DISPLAY_INIT_OK 0
-#define INTERFACE_DISPLAY_INIT_FAILED -1
-
-int32_t interface_display_set_screen(struct interface_display *self, qdlWidget *screen);
-#define INTERFACE_DISPLAY_SET_SCREEN_OK 0
-#define INTERFACE_DISPLAY_SET_SCREEN_FAILED -1
-
-
+int32_t ui_320240_init(struct ui_320240 *self, struct interface_display *display);
+#define UI_320240_INIT_OK 0
+#define UI_320240_INIT_FAILED -1
 
 

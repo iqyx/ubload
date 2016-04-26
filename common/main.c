@@ -38,9 +38,6 @@
 #include "sffs.h"
 #include "fw_image.h"
 
-#include "qdl_primitives.h"
-#include "qdl_render_line.h"
-
 struct fw_image main_fw;
 
 

@@ -174,6 +174,32 @@ qdlResult qdl_render_line(qdlColor c[], const qdlPos posx1, const qdlPos posx2, 
 			}
 			break;
 		}
+
+		case QDL_IMAGE: {
+			int bytes_per_line = (w->size.x + 7) / 8;
+			int line_data_pos = (posy - w->position.y) * bytes_per_line;
+
+			if ((posy - w->position.y) >= w->size.y) {
+				break;
+			}
+
+			for (int x = w->position.x; x < (w->position.x + w->size.x); x++) {
+				int posx = x + posx1;
+				if (posx > posx2 || posx < posx1) {
+					continue;
+				}
+
+				int data_pos_x = x - w->position.x;
+
+				if (w->properties.image.data[line_data_pos + data_pos_x / 8] & (0x80 >> (data_pos_x % 8))) {
+					c[posx] = w->properties.image.color;
+				}
+			}
+
+			break;
+		}
+
+
 	}
 	return QDL_RENDER_LINE_OK;
 }

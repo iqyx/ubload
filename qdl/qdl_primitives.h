@@ -49,6 +49,7 @@ enum qdl_widget_shape {
 	QDL_ELLIPSE,
 	QDL_HISTOGRAM,
 	QDL_TEXT,
+	QDL_IMAGE,
 
 
 };
@@ -86,6 +87,11 @@ struct qdl_text_properties {
 	char *text;
 };
 
+struct qdl_image_properties {
+	const uint8_t *data;
+	qdlColor color;
+};
+
 union qdl_properties {
 	struct qdl_widget_properties widget;
 	struct qdl_group_properties group;
@@ -93,6 +99,7 @@ union qdl_properties {
 	struct qdl_ellipse_properties ellipse;
 	struct qdl_histogram_properties histogram;
 	struct qdl_text_properties text;
+	struct qdl_image_properties image;
 };
 
 struct qdl_widget_t {

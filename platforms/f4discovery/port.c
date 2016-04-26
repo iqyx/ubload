@@ -1,4 +1,4 @@
-/**
+/*
  * F4 discovery board port-specific configuration
  *
  * Copyright (C) 2015, Marek Koza, qyx@krtko.org
@@ -40,243 +40,14 @@
 #include "interface_led.h"
 #include "s1d13700_locm3.h"
 #include "interface_display.h"
-
+#include "ui_320240.h"
 
 uint32_t SystemCoreClock;
 
+/* F4 discovery port module instances. */
 struct module_led led1;
 struct module_s1d13700_locm3 display1;
-
-
-qdlPos battery_indicator_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-char battery_indicator_text[10] = "62%";
-
-/*
- * Simple graph indicator with a 0-100% text.
- */
-qdlWidget battery_indicator = {
-	.shape = QDL_GROUP,
-	.position = {0, 0},
-	.size = {50, 14},
-	.properties.group = {
-		.children = &(qdlWidget*[]) {
-			&(qdlWidget) {
-				.shape = QDL_RECT,
-				.position = {0, 0},
-				.size = {50, 13},
-				.properties.rect = {
-					.border_width = 1,
-					.border_color = COLOR_BLACK,
-					.fill_color = COLOR_WHITE
-				}
-			},
-			&(qdlWidget) {
-				.shape = QDL_HISTOGRAM,
-				.position = {29, 1},
-				.size = {20, 10},
-				.properties.histogram = {
-					.data = battery_indicator_data,
-					.data_size = 10,
-					.bar_color = COLOR_BLACK,
-					.bar_width = 2,
-				},
-			},
-			&(qdlWidget) {
-				.shape = QDL_TEXT,
-				.position = {2, 1},
-				.size = {20, 12},
-				.properties.text = {
-					.text_color = COLOR_BLACK,
-					.text_font = &minecraftia,
-					.text = battery_indicator_text,
-				},
-			},
-			NULL
-		},
-	}
-
-};
-
-/*
- * Vertical battery indicator, no text.
- */
-qdlWidget battery_indicator2 = {
-	.shape = QDL_GROUP,
-	.position = {0, 0},
-	.size = {16, 32},
-	.properties.group = {
-		.children = &(qdlWidget*[]) {
-			&(qdlWidget) {
-				.shape = QDL_RECT,
-				.position = {0, 4},
-				.size = {16, 27},
-				.properties.rect = {
-					.border_width = 1,
-					.border_color = COLOR_BLACK,
-					.fill_color = COLOR_WHITE,
-				}
-			},
-			&(qdlWidget) {
-				.shape = QDL_RECT,
-				.position = {4, 0},
-				.size = {8, 4},
-				.properties.rect = {
-					.border_width = 1,
-					.border_color = COLOR_BLACK,
-					.fill_color = COLOR_WHITE,
-				}
-			},
-			&(qdlWidget) {
-				.shape = QDL_RECT,
-				.position = {2, 13},
-				.size = {12, 16},
-				.properties.rect = {
-					.border_width = 1,
-					.border_color = COLOR_GRAY,
-					.fill_color = COLOR_SILVER,
-				}
-			},
-			NULL
-		},
-	}
-
-};
-
-/*
- * Horizontal battery indicator with 0-100% text below.
- */
-qdlWidget battery_indicator3 = {
-	.shape = QDL_GROUP,
-	.position = {0, 3},
-	.size = {32, 26},
-	.properties.group = {
-		.children = &(qdlWidget*[]) {
-			&(qdlWidget) {
-				.shape = QDL_RECT,
-				.position = {0, 0},
-				.size = {27, 16},
-				.properties.rect = {
-					.border_width = 1,
-					.border_color = COLOR_BLACK,
-					.fill_color = COLOR_WHITE,
-				}
-			},
-			&(qdlWidget) {
-				.shape = QDL_RECT,
-				.position = {27, 4},
-				.size = {4, 8},
-				.properties.rect = {
-					.border_width = 1,
-					.border_color = COLOR_BLACK,
-					.fill_color = COLOR_WHITE,
-				}
-			},
-			&(qdlWidget) {
-				.shape = QDL_RECT,
-				.position = {2, 2},
-				.size = {16, 12},
-				.properties.rect = {
-					.border_width = 1,
-					.border_color = COLOR_BLACK,
-					.fill_color = COLOR_BLACK,
-				}
-			},
-			&(qdlWidget) {
-				.shape = QDL_TEXT,
-				.position = {0, 17},
-				.size = {32, 12},
-				.properties.text = {
-					.text_color = COLOR_BLACK,
-					.text_font = &dejavu_sans_bold_10,
-					.text = battery_indicator_text,
-				},
-			},
-			NULL
-		},
-	}
-
-};
-
-
-char charging_status_text[20] = "Discharging 2.6W";
-/*
- * Charging status indicator.
- */
-qdlWidget charging_status = {
-	.shape = QDL_GROUP,
-	.position = {36, 0},
-	.size = {96, 32},
-	.properties.group = {
-		.children = &(qdlWidget*[]) {
-			&(qdlWidget) {
-				.shape = QDL_TEXT,
-				.position = {0, 0},
-				.size = {96, 12},
-				.properties.text = {
-					.text_color = COLOR_BLACK,
-					.text_font = &minecraftia,
-					.text = "3.78V",
-				},
-			},
-			&(qdlWidget) {
-				.shape = QDL_TEXT,
-				.position = {0, 10},
-				.size = {96, 12},
-				.properties.text = {
-					.text_color = COLOR_BLACK,
-					.text_font = &minecraftia,
-					.text = "-1.2A",
-				},
-			},
-			&(qdlWidget) {
-				.shape = QDL_TEXT,
-				.position = {0, 20},
-				.size = {96, 12},
-				.properties.text = {
-					.text_color = COLOR_BLACK,
-					.text_font = &dejavu_sans_bold_10,
-					.text = "4.5W",
-				},
-			},
-			&(qdlWidget) {
-				.shape = QDL_TEXT,
-				.position = {40, 0},
-				.size = {64, 12},
-				.properties.text = {
-					.text_color = COLOR_BLACK,
-					.text_font = &dejavu_sans_bold_10,
-					.text = "USB CHG",
-				},
-			},
-			&(qdlWidget) {
-				.shape = QDL_TEXT,
-				.position = {40, 12},
-				.size = {96, 12},
-				.properties.text = {
-					.text_color = COLOR_BLACK,
-					.text_font = &dejavu_sans_bold_10,
-					.text = "1h 23m",
-				},
-			},
-			NULL
-		},
-	}
-
-};
-
-
-
-qdlWidget scene = {
-	.shape = QDL_GROUP,
-	.size = {320, 240},
-	.properties.group = {
-		.children = &(qdlWidget*[]) {
-			&battery_indicator3,
-			&charging_status,
-			NULL
-		},
-	},
-};
+struct ui_320240 ui1;
 
 
 int32_t port_mcu_init(void) {
@@ -353,8 +124,9 @@ int32_t port_gpio_init(void) {
 		gpio_set(GPIOB, GPIO12);
 	#endif
 
-	/* Status LEDs. */
-	gpio_mode_setup(PORT_LED_BASIC_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, 1 << PORT_LED_BASIC_PIN);
+	#if PORT_LED_BASIC == true
+		gpio_mode_setup(PORT_LED_BASIC_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, 1 << PORT_LED_BASIC_PIN);
+	#endif
 
 	return 0;
 }
@@ -365,6 +137,7 @@ int32_t port_early_init(void) {
 }
 
 
+/* GPIO port configuration for the S1D13700 display driver interface. */
 const struct module_s1d13700_locm3_port s1d13700_config = {
 	PORT_DISPLAY_DATA_PORT,
 	PORT_DISPLAY_DATA_PORT_MASK,
@@ -381,23 +154,22 @@ const struct module_s1d13700_locm3_port s1d13700_config = {
 	PORT_DISPLAY_A0_PIN
 };
 
+
 int32_t port_module_init(void) {
 
-	module_s1d13700_locm3_init(
-		&display1,
-		"display1",
-		&s1d13700_config
-	);
-	hal_interface_set_name(&(display1.iface.descriptor), "display1");
-	interface_display_set_screen(&display1.iface, &scene);
-
-	if (PORT_LED_BASIC == true) {
+	#if PORT_LED_BASIC == true
 		module_led_init(&led1, "led1");
 		module_led_set_port(&led1, PORT_LED_BASIC_PORT, 1 << PORT_LED_BASIC_PIN);
 		hal_interface_set_name(&(led1.iface.descriptor), "led1");
 		interface_led_loop(&led1.iface, 0xff);
-	}
+	#endif
 
+	#if PORT_DISPLAY == true
+		module_s1d13700_locm3_init(&display1, "display1", &s1d13700_config);
+		hal_interface_set_name(&(display1.iface.descriptor), "display1");
+
+		ui_320240_init(&ui1, &display1.iface);
+	#endif
 
 	return PORT_MODULE_INIT_OK;
 }
@@ -413,7 +185,6 @@ void port_task_timer_init(void) {
 	timer_continuous_mode(TIM3);
 	timer_set_period(TIM3, UINT16_MAX);
 	timer_enable_counter(TIM3);
-
 }
 
 

@@ -125,7 +125,7 @@ static void module_s1d13700_locm3_task(void *p) {
 
 	while (1) {
 		display_refresh(self);
-		vTaskDelay(1);
+		vTaskDelay(1000);
 	}
 }
 
@@ -217,7 +217,7 @@ int32_t module_s1d13700_locm3_init(struct module_s1d13700_locm3 *self, const cha
 	display_clear(self);
 
 	/* Create a periodic display refresh task */
-	xTaskCreate(module_s1d13700_locm3_task, "s1d13700", configMINIMAL_STACK_SIZE + 1024, (void *)self, 1, NULL);
+	xTaskCreate(module_s1d13700_locm3_task, "s1d13700", configMINIMAL_STACK_SIZE + 2048, (void *)self, 1, NULL);
 
 	u_log(system_log, LOG_TYPE_INFO, "%s: S1D13700 display module initialized", self->module.name);
 

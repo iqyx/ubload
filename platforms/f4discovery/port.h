@@ -1,4 +1,4 @@
-/**
+/*
  * qNode4 board port-specific configuration
  *
  * Copyright (C) 2015, Marek Koza, qyx@krtko.org
@@ -19,8 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CONFIG_PORT_H_
-#define _CONFIG_PORT_H_
+#pragma once
 
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
@@ -54,9 +53,9 @@
 #define PORT_SERIAL_AF             GPIO_AF7
 
 /* Firmware image configuration */
-#define FW_IMAGE_BASE              0x08008000
+#define FW_IMAGE_BASE              0x08010000
 #define FW_IMAGE_SECTORS           6
-#define FW_IMAGE_BASE_SECTOR       2
+#define FW_IMAGE_BASE_SECTOR       3
 #define FW_IMAGE_PROGRAM_SPEED     3
 
 /* Circular log configuration */
@@ -86,9 +85,9 @@
 #define PORT_DISPLAY_A0_PORT         GPIOD
 #define PORT_DISPLAY_A0_PIN          GPIO9
 
-
 extern struct module_led led1;
-
+extern struct module_s1d13700_locm3 display1;
+extern struct ui_320240 ui1;
 
 int32_t port_mcu_init(void);
 #define PORT_MCU_INIT_OK 0
@@ -109,6 +108,5 @@ int32_t port_module_init(void);
 void port_task_timer_init(void);
 uint32_t port_task_timer_get_value(void);
 
-#endif
 
 

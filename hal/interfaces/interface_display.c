@@ -1,4 +1,4 @@
-/**
+/*
  * uMeshFw display interface
  *
  * Copyright (C) 2015-2016, Marek Koza, qyx@krtko.org
